@@ -23,6 +23,13 @@
             ]
           },
           {
+            "group": "Warp Pay",
+            "pages": [
+              "warp-pay/index",
+              "warp-pay/examples"
+            ]
+          },
+          {
             "group": "Customization",
             "pages": [
               "essentials/settings",
