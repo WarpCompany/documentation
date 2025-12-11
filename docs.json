@@ -3,7 +3,7 @@
   "theme": "mint",
   "name": "Mint Starter Kit",
   "colors": {
-    "primary": "#16A34A",
+    "primary": "#B429FF",
     "light": "#07C983",
     "dark": "#15803D"
   },
@@ -23,17 +23,17 @@
             ]
           },
           {
+            "group": "Warp Bridge",
+            "pages": [
+              "warp-brdige/index",
+              "warp-bridge/page1"
+            ]
+          },
+          {
             "group": "Warp Pay",
             "pages": [
               "warp-pay/index",
               "warp-pay/examples"
-            ]
-          },
-          {
-            "group": "Customization",
-            "pages": [
-              "essentials/settings",
-              "essentials/navigation"
             ]
           },
           {
