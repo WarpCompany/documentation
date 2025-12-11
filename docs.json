@@ -25,8 +25,9 @@
           {
             "group": "Warp Bridge",
             "pages": [
-              "warp-brdige/introduction",
-              "warp-bridge/page1"
+              "warp-bridge/introduction",
+              "warp-bridge/protocol",
+              "warp-bridge/usecases"
             ]
           },
           {
