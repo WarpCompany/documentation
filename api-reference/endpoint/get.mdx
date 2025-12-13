@@ -1,4 +1,91 @@
 ---
-title: 'Get Plants'
-openapi: 'GET /plants'
+title: 'Get Quote'
+description: 'Request a cross-chain transfer quote'
 ---
+
+# **GET /v1/quote**
+
+Request a quote for transferring tokens between chains. Quotes include estimated fees, output amounts, and execution time.
+
+## **Request**
+
+### **Headers**
+
+```
+Authorization: Bearer YOUR_API_KEY
+Content-Type: application/json
+```
+
+### **Query Parameters**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `sourceChain` | string | Yes | Source blockchain identifier (e.g., `ethereum`) |
+| `destinationChain` | string | Yes | Destination blockchain identifier (e.g., `arbitrum`) |
+| `sourceToken` | string | Yes | Token symbol on source chain (e.g., `USDC`) |
+| `destinationToken` | string | Yes | Token symbol on destination chain (e.g., `USDC`) |
+| `amount` | string | Yes | Amount to transfer in smallest unit (e.g., wei) |
+| `recipient` | string | Yes | Recipient address on destination chain |
+| `slippageBps` | integer | No | Maximum slippage in basis points (default: 50) |
+
+### **Example Request**
+
+```bash
+curl -X GET "https://api.usewarp.net/v1/quote?sourceChain=ethereum&destinationChain=arbitrum&sourceToken=USDC&destinationToken=USDC&amount=100000000&recipient=0x742d35Cc6634C0532925a3b844Bc454e4438f44e" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+## **Response**
+
+### **Success Response (200)**
+
+```json
+{
+  "success": true,
+  "data": {
+    "quoteId": "quote_1a2b3c4d5e6f",
+    "sourceChain": "ethereum",
+    "destinationChain": "arbitrum",
+    "sourceToken": "USDC",
+    "destinationToken": "USDC",
+    "sourceAmount": "100000000",
+    "destinationAmount": "99750000",
+    "estimatedFee": "250000",
+    "estimatedGasCost": "0.0012",
+    "estimatedTime": 45,
+    "expiresAt": "2025-12-13T10:15:00Z",
+    "route": {
+      "solver": "solver_xyz123",
+      "hops": 1
+    }
+  },
+  "timestamp": "2025-12-13T10:10:00Z"
+}
+```
+
+### **Field Descriptions**
+
+- `quoteId` — Unique identifier for this quote (required for execution)
+- `sourceAmount` — Amount to be sent from source chain (in smallest unit)
+- `destinationAmount` — Amount to be received on destination chain (in smallest unit)
+- `estimatedFee` — Warp protocol fee (in source token smallest unit)
+- `estimatedGasCost` — Estimated gas cost in source chain native currency
+- `estimatedTime` — Estimated completion time in seconds
+- `expiresAt` — Quote expiration timestamp (typically 60 seconds)
+
+### **Error Response (400)**
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "INSUFFICIENT_LIQUIDITY",
+    "message": "Not enough liquidity available for this transfer",
+    "details": {
+      "requestedAmount": "100000000",
+      "availableAmount": "50000000"
+    }
+  },
+  "timestamp": "2025-12-13T10:10:00Z"
+}
+```

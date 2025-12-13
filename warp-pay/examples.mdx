@@ -1,6 +1,573 @@
 ---
-title: "New file"
-description: "Description of your new file."
+title: "Integration Examples"
+description: "Real-world code samples for integrating Warp into your applications"
 ---
 
-Code examples for our SDK 
+# **_Warp Integration Examples_**
+
+**_This page provides practical, production-ready code examples for integrating Warp Bridge and Pay With Warp into common application types._**
+
+Whether you're building a wallet, dApp, payment gateway, or automated trading system, these examples will help you get up and running quickly.
+
+---
+
+## **Example 1: Basic Cross-Chain Transfer (JavaScript)**
+
+This example shows how to execute a simple cross-chain transfer using the Warp JavaScript SDK.
+
+```javascript
+import { WarpClient } from '@usewarp/sdk';
+
+const warp = new WarpClient({
+  apiKey: process.env.WARP_API_KEY,
+  environment: 'mainnet'
+});
+
+async function transferUSDC() {
+  try {
+    // Step 1: Get a quote
+    const quote = await warp.getQuote({
+      sourceChain: 'ethereum',
+      destinationChain: 'arbitrum',
+      sourceToken: 'USDC',
+      destinationToken: 'USDC',
+      amount: '100000000', // 100 USDC (6 decimals)
+      recipient: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e'
+    });
+
+    console.log('Quote:', quote);
+    console.log(`Fee: ${quote.estimatedFee / 1e6} USDC`);
+    console.log(`Estimated time: ${quote.estimatedTime} seconds`);
+
+    // Step 2: Execute the transfer
+    const transfer = await warp.executeTransfer({
+      quoteId: quote.quoteId,
+      userAddress: userWalletAddress,
+      // Optional: add slippage tolerance
+      maxSlippageBps: 50 // 0.5%
+    });
+
+    console.log('Transfer initiated:', transfer.transferId);
+
+    // Step 3: Monitor status
+    const finalStatus = await warp.waitForCompletion(transfer.transferId, {
+      pollingInterval: 3000, // Check every 3 seconds
+      timeout: 300000 // 5 minute timeout
+    });
+
+    console.log('Transfer completed:', finalStatus);
+    return finalStatus;
+
+  } catch (error) {
+    console.error('Transfer failed:', error);
+    throw error;
+  }
+}
+```
+
+---
+
+## **Example 2: Payment Checkout Integration (React)**
+
+This example demonstrates how to integrate Pay With Warp into a React e-commerce application.
+
+```jsx
+import { useState } from 'react';
+import { WarpPayment } from '@usewarp/react';
+
+function CheckoutPage({ cartTotal, orderId }) {
+  const [paymentStatus, setPaymentStatus] = useState('pending');
+
+  const handlePaymentSuccess = (payment) => {
+    console.log('Payment successful:', payment);
+    setPaymentStatus('completed');
+    // Update your backend, mark order as paid
+    fetch('/api/orders/complete', {
+      method: 'POST',
+      body: JSON.stringify({
+        orderId,
+        paymentId: payment.paymentId,
+        transactionHash: payment.transactionHash
+      })
+    });
+  };
+
+  const handlePaymentError = (error) => {
+    console.error('Payment failed:', error);
+    setPaymentStatus('failed');
+  };
+
+  return (
+    <div className="checkout-container">
+      <h2>Complete Your Purchase</h2>
+      <div className="order-summary">
+        <p>Total: ${cartTotal}</p>
+        <p>Order ID: {orderId}</p>
+      </div>
+
+      <WarpPayment
+        apiKey={process.env.NEXT_PUBLIC_WARP_API_KEY}
+        amount={cartTotal}
+        currency="USD"
+        acceptedTokens={['USDC', 'USDT', 'ETH', 'WBTC']}
+        acceptedChains={['ethereum', 'arbitrum', 'polygon', 'base']}
+        merchantAddress="0x1234567890abcdef1234567890abcdef12345678"
+        metadata={{
+          orderId,
+          customerEmail: 'customer@example.com'
+        }}
+        onSuccess={handlePaymentSuccess}
+        onError={handlePaymentError}
+        theme="dark"
+      />
+
+      {paymentStatus === 'completed' && (
+        <div className="success-message">
+          ✅ Payment confirmed! Your order is being processed.
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default CheckoutPage;
+```
+
+---
+
+## **Example 3: Backend Payment Verification (Node.js)**
+
+This example shows how to verify Warp payments server-side for security.
+
+```javascript
+import express from 'express';
+import { WarpClient } from '@usewarp/sdk';
+
+const app = express();
+const warp = new WarpClient({
+  apiKey: process.env.WARP_API_KEY,
+  environment: 'mainnet'
+});
+
+app.use(express.json());
+
+// Endpoint to verify payment before fulfilling order
+app.post('/api/verify-payment', async (req, res) => {
+  const { paymentId, orderId } = req.body;
+
+  try {
+    // Fetch payment details from Warp
+    const payment = await warp.getPayment(paymentId);
+
+    // Verify payment is completed
+    if (payment.status !== 'completed') {
+      return res.status(400).json({
+        error: 'Payment not yet completed',
+        status: payment.status
+      });
+    }
+
+    // Verify payment amount matches order
+    const order = await getOrderFromDatabase(orderId);
+    if (payment.amountUSD < order.totalAmount) {
+      return res.status(400).json({
+        error: 'Payment amount insufficient'
+      });
+    }
+
+    // Verify payment is for your merchant address
+    if (payment.recipient !== process.env.MERCHANT_ADDRESS) {
+      return res.status(400).json({
+        error: 'Invalid recipient address'
+      });
+    }
+
+    // All checks passed - fulfill the order
+    await fulfillOrder(orderId, payment);
+
+    res.json({
+      success: true,
+      paymentId: payment.paymentId,
+      transactionHash: payment.transactionHash,
+      completedAt: payment.completedAt
+    });
+
+  } catch (error) {
+    console.error('Payment verification failed:', error);
+    res.status(500).json({ error: 'Verification failed' });
+  }
+});
+
+app.listen(3000, () => {
+  console.log('Server running on port 3000');
+});
+```
+
+---
+
+## **Example 4: Webhook Handler for Payment Events**
+
+Set up webhook listeners to receive real-time payment notifications.
+
+```javascript
+import express from 'express';
+import crypto from 'crypto';
+
+const app = express();
+app.use(express.json());
+
+// Verify webhook signature for security
+function verifyWebhookSignature(payload, signature, secret) {
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex');
+  
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature)
+  );
+}
+
+app.post('/webhooks/warp', async (req, res) => {
+  const signature = req.headers['x-warp-signature'];
+  const payload = JSON.stringify(req.body);
+
+  // Verify the webhook is from Warp
+  if (!verifyWebhookSignature(payload, signature, process.env.WARP_WEBHOOK_SECRET)) {
+    return res.status(401).json({ error: 'Invalid signature' });
+  }
+
+  const event = req.body;
+
+  // Handle different event types
+  switch (event.type) {
+    case 'payment.completed':
+      await handlePaymentCompleted(event.data);
+      break;
+    
+    case 'payment.failed':
+      await handlePaymentFailed(event.data);
+      break;
+    
+    case 'transfer.completed':
+      await handleTransferCompleted(event.data);
+      break;
+    
+    default:
+      console.log('Unhandled event type:', event.type);
+  }
+
+  res.json({ received: true });
+});
+
+async function handlePaymentCompleted(payment) {
+  console.log('Payment completed:', payment.paymentId);
+  
+  // Update order status
+  await updateOrderStatus(payment.metadata.orderId, 'paid');
+  
+  // Send confirmation email
+  await sendConfirmationEmail(payment.metadata.customerEmail, payment);
+  
+  // Fulfill digital goods immediately
+  if (payment.metadata.productType === 'digital') {
+    await deliverDigitalGoods(payment.metadata.orderId);
+  }
+}
+
+async function handlePaymentFailed(payment) {
+  console.error('Payment failed:', payment.paymentId);
+  
+  // Notify customer
+  await sendPaymentFailedEmail(payment.metadata.customerEmail);
+  
+  // Update order status
+  await updateOrderStatus(payment.metadata.orderId, 'payment_failed');
+}
+
+async function handleTransferCompleted(transfer) {
+  console.log('Transfer completed:', transfer.transferId);
+  
+  // Handle completed cross-chain transfer
+  // e.g., update user balance, notify user, etc.
+}
+
+app.listen(8080, () => {
+  console.log('Webhook server running on port 8080');
+});
+```
+
+---
+
+## **Example 5: Multi-Chain Wallet Integration**
+
+This example shows how to integrate Warp into a multi-chain wallet application.
+
+```typescript
+import { WarpClient } from '@usewarp/sdk';
+import { ethers } from 'ethers';
+
+class WarpWalletIntegration {
+  private warp: WarpClient;
+  private provider: ethers.providers.Web3Provider;
+
+  constructor(apiKey: string) {
+    this.warp = new WarpClient({ apiKey, environment: 'mainnet' });
+  }
+
+  async connectWallet() {
+    this.provider = new ethers.providers.Web3Provider(window.ethereum);
+    await this.provider.send('eth_requestAccounts', []);
+    return this.provider.getSigner().getAddress();
+  }
+
+  async getOptimalRoute(params: {
+    sourceChain: string;
+    destinationChain: string;
+    token: string;
+    amount: string;
+  }) {
+    // Get multiple quotes to find the best route
+    const quotes = await this.warp.getQuotes({
+      sourceChain: params.sourceChain,
+      destinationChain: params.destinationChain,
+      sourceToken: params.token,
+      destinationToken: params.token,
+      amount: params.amount
+    });
+
+    // Sort by best output amount
+    quotes.sort((a, b) => 
+      parseInt(b.destinationAmount) - parseInt(a.destinationAmount)
+    );
+
+    return quotes[0]; // Return best quote
+  }
+
+  async executeCrossChainSwap(params: {
+    sourceChain: string;
+    destinationChain: string;
+    sourceToken: string;
+    destinationToken: string;
+    amount: string;
+    recipient: string;
+  }) {
+    // Get quote
+    const quote = await this.warp.getQuote(params);
+
+    // Show user confirmation
+    const confirmed = await this.showUserConfirmation({
+      sourceAmount: quote.sourceAmount,
+      destinationAmount: quote.destinationAmount,
+      fee: quote.estimatedFee,
+      estimatedTime: quote.estimatedTime
+    });
+
+    if (!confirmed) {
+      throw new Error('User cancelled transaction');
+    }
+
+    // Execute transfer
+    const userAddress = await this.connectWallet();
+    const transfer = await this.warp.executeTransfer({
+      quoteId: quote.quoteId,
+      userAddress,
+      maxSlippageBps: 100 // 1% slippage tolerance
+    });
+
+    // Track progress
+    return this.trackTransferProgress(transfer.transferId);
+  }
+
+  async trackTransferProgress(transferId: string) {
+    return new Promise((resolve, reject) => {
+      const checkStatus = async () => {
+        try {
+          const status = await this.warp.getTransferStatus(transferId);
+          
+          this.updateUI(status);
+
+          if (status.status === 'completed') {
+            resolve(status);
+          } else if (status.status === 'failed') {
+            reject(new Error('Transfer failed'));
+          } else {
+            // Check again in 3 seconds
+            setTimeout(checkStatus, 3000);
+          }
+        } catch (error) {
+          reject(error);
+        }
+      };
+
+      checkStatus();
+    });
+  }
+
+  private updateUI(status: any) {
+    // Update wallet UI with transfer progress
+    console.log('Transfer status:', status.status);
+    // Emit event for UI to handle
+    window.dispatchEvent(new CustomEvent('warp-transfer-update', {
+      detail: status
+    }));
+  }
+
+  private async showUserConfirmation(details: any): Promise<boolean> {
+    // Show confirmation modal in your UI
+    return confirm(`
+      Transfer ${details.sourceAmount} tokens
+      Receive: ${details.destinationAmount}
+      Fee: ${details.fee}
+      Est. time: ${details.estimatedTime}s
+      
+      Confirm?
+    `);
+  }
+}
+
+// Usage
+const warpIntegration = new WarpWalletIntegration(process.env.WARP_API_KEY);
+
+async function handleCrossChainTransfer() {
+  try {
+    const result = await warpIntegration.executeCrossChainSwap({
+      sourceChain: 'ethereum',
+      destinationChain: 'arbitrum',
+      sourceToken: 'USDC',
+      destinationToken: 'USDC',
+      amount: '1000000000', // 1000 USDC
+      recipient: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e'
+    });
+    
+    console.log('Transfer completed:', result);
+  } catch (error) {
+    console.error('Transfer error:', error);
+  }
+}
+```
+
+---
+
+## **Example 6: Automated Trading Bot**
+
+This example demonstrates using Warp for cross-chain arbitrage.
+
+```python
+import asyncio
+from warp_sdk import WarpClient
+from decimal import Decimal
+
+class CrossChainArbitrageBot:
+    def __init__(self, api_key: str):
+        self.warp = WarpClient(api_key=api_key, environment='mainnet')
+        self.min_profit_threshold = Decimal('0.005')  # 0.5% minimum profit
+    
+    async def find_arbitrage_opportunities(self):
+        """Scan for profitable cross-chain arbitrage"""
+        chains = ['ethereum', 'arbitrum', 'polygon', 'base']
+        tokens = ['USDC', 'USDT', 'DAI']
+        
+        for source_chain in chains:
+            for dest_chain in chains:
+                if source_chain == dest_chain:
+                    continue
+                
+                for token in tokens:
+                    await self.check_arbitrage(source_chain, dest_chain, token)
+    
+    async def check_arbitrage(self, source_chain: str, dest_chain: str, token: str):
+        """Check if arbitrage is profitable"""
+        amount = '1000000000'  # 1000 tokens (assuming 6 decimals)
+        
+        # Get forward quote
+        forward_quote = await self.warp.get_quote(
+            source_chain=source_chain,
+            destination_chain=dest_chain,
+            source_token=token,
+            destination_token=token,
+            amount=amount
+        )
+        
+        # Get reverse quote
+        reverse_quote = await self.warp.get_quote(
+            source_chain=dest_chain,
+            destination_chain=source_chain,
+            source_token=token,
+            destination_token=token,
+            amount=forward_quote['destinationAmount']
+        )
+        
+        # Calculate profit
+        initial = Decimal(amount)
+        final = Decimal(reverse_quote['destinationAmount'])
+        profit_pct = (final - initial) / initial
+        
+        if profit_pct > self.min_profit_threshold:
+            print(f"🎯 Arbitrage opportunity found!")
+            print(f"Route: {source_chain} -> {dest_chain} -> {source_chain}")
+            print(f"Token: {token}")
+            print(f"Profit: {profit_pct * 100:.2f}%")
+            
+            # Execute if profitable
+            await self.execute_arbitrage(forward_quote, reverse_quote)
+    
+    async def execute_arbitrage(self, forward_quote, reverse_quote):
+        """Execute arbitrage trade"""
+        # Execute first leg
+        transfer1 = await self.warp.execute_transfer(
+            quote_id=forward_quote['quoteId'],
+            user_address=self.wallet_address
+        )
+        
+        # Wait for completion
+        await self.warp.wait_for_completion(transfer1['transferId'])
+        
+        # Execute second leg
+        transfer2 = await self.warp.execute_transfer(
+            quote_id=reverse_quote['quoteId'],
+            user_address=self.wallet_address
+        )
+        
+        # Wait for completion
+        result = await self.warp.wait_for_completion(transfer2['transferId'])
+        
+        print(f"✅ Arbitrage completed: {result}")
+
+# Run the bot
+async def main():
+    bot = CrossChainArbitrageBot(api_key='your_api_key')
+    
+    # Scan for opportunities every 10 seconds
+    while True:
+        await bot.find_arbitrage_opportunities()
+        await asyncio.sleep(10)
+
+asyncio.run(main())
+```
+
+---
+
+## **Additional Resources**
+
+<CardGroup cols={2}>
+  <Card title="API Reference" icon="book" href="/api-reference/introduction">
+    Complete API documentation with all endpoints and parameters.
+  </Card>
+  <Card title="SDK Documentation" icon="code" href="/api-reference/introduction">
+    Detailed guides for JavaScript, Python, and Go SDKs.
+  </Card>
+  <Card title="Protocol Design" icon="microscope" href="/warp-bridge/protocol">
+    Understand how Warp's cross-chain settlement works under the hood.
+  </Card>
+  <Card title="Use Cases" icon="lightbulb" href="/warp-bridge/usecases">
+    Explore different ways to integrate Warp into your application.
+  </Card>
+</CardGroup>
+
+---
+
+<Note>
+  **Need help with your integration?** Join our [Discord community](https://discord.gg/warp) or reach out to [developers@usewarp.net](mailto:developers@usewarp.net).
+</Note>

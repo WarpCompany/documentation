@@ -1,33 +1,234 @@
 ---
-title: 'Introduction'
-description: 'Example section for showcasing API endpoints'
+title: 'API Reference'
+description: 'Complete API documentation for Warp Bridge and Pay With Warp'
 ---
 
+# **_Warp API Reference_**
+
+**_The Warp API provides programmatic access to cross-chain transfers, payment processing, quote generation, and transaction tracking. All endpoints use REST principles with JSON request and response formats._**
+
+---
+
+## **Base URLs**
+
+```
+Production: https://api.usewarp.net/v1
+Testnet:    https://api-testnet.usewarp.net/v1
+```
+
+<Warning>
+  Always test your integration on testnet before deploying to production.
+</Warning>
+
+---
+
+## **Authentication**
+
+All API endpoints require authentication using Bearer tokens. Include your API key in the `Authorization` header of every request:
+
+```bash
+Authorization: Bearer YOUR_API_KEY
+```
+
+### **Getting Your API Key**
+
+1. Visit the [Warp Platform](https://platform.usewarp.net)
+2. Navigate to **Settings** → **API Keys**
+3. Click **Create New Key**
+4. Store your key securely — it will only be shown once
+
 <Note>
-  If you're not looking to build API reference documentation, you can delete
-  this section by removing the api-reference folder.
+  Warp offers both **public** and **private** API keys. Use public keys for client-side integrations (widget, frontend) and private keys for server-side operations.
 </Note>
 
-## Welcome
+---
 
-There are two ways to build API documentation: [OpenAPI](https://mintlify.com/docs/api-playground/openapi/setup) and [MDX components](https://mintlify.com/docs/api-playground/mdx/configuration). For the starter kit, we are using the following OpenAPI specification.
+## **Rate Limits**
 
-<Card
-  title="Plant Store Endpoints"
-  icon="leaf"
-  href="https://github.com/mintlify/starter/blob/main/api-reference/openapi.json"
->
-  View the OpenAPI specification file
-</Card>
+API rate limits vary by plan:
 
-## Authentication
+| Plan | Requests/Minute | Requests/Day |
+|------|-----------------|--------------|
+| Free | 60 | 1,000 |
+| Starter | 300 | 10,000 |
+| Pro | 1,200 | 100,000 |
+| Enterprise | Custom | Custom |
 
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
+Rate limit headers are included in every response:
+
+```
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 45
+X-RateLimit-Reset: 1702489200
+```
+
+---
+
+## **Response Format**
+
+All API responses follow a consistent structure:
+
+### **Success Response**
 
 ```json
-"security": [
-  {
-    "bearerAuth": []
-  }
-]
+{
+  "success": true,
+  "data": {
+    // Response payload
+  },
+  "timestamp": "2025-12-13T10:30:00Z"
+}
 ```
+
+### **Error Response**
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "INSUFFICIENT_LIQUIDITY",
+    "message": "Not enough liquidity available for this transfer",
+    "details": {
+      "requestedAmount": "1000000000",
+      "availableAmount": "500000000"
+    }
+  },
+  "timestamp": "2025-12-13T10:30:00Z"
+}
+```
+
+---
+
+## **Common Error Codes**
+
+| Code | Description |
+|------|-------------|
+| `INVALID_API_KEY` | API key is missing, invalid, or expired |
+| `RATE_LIMIT_EXCEEDED` | Too many requests — wait before retrying |
+| `INVALID_CHAIN` | Unsupported or invalid blockchain specified |
+| `INVALID_TOKEN` | Token not supported on specified chain |
+| `INSUFFICIENT_LIQUIDITY` | Not enough liquidity for the requested amount |
+| `QUOTE_EXPIRED` | Quote has expired — request a new one |
+| `TRANSFER_FAILED` | Transfer execution failed — check transaction details |
+| `INVALID_AMOUNT` | Amount is below minimum or exceeds maximum |
+| `VALIDATION_ERROR` | Request parameters failed validation |
+
+---
+
+## **Supported Chains**
+
+Warp currently supports the following blockchains:
+
+| Chain ID | Chain Name | Mainnet | Testnet |
+|----------|------------|---------|---------|
+| `ethereum` | Ethereum | ✅ | ✅ (Sepolia) |
+| `arbitrum` | Arbitrum One | ✅ | ✅ (Sepolia) |
+| `polygon` | Polygon PoS | ✅ | ✅ (Amoy) |
+| `base` | Base | ✅ | ✅ (Sepolia) |
+| `optimism` | Optimism | ✅ | ✅ (Sepolia) |
+| `avalanche` | Avalanche C-Chain | ✅ | ✅ (Fuji) |
+| `bsc` | BNB Smart Chain | ✅ | ✅ (Testnet) |
+
+---
+
+## **Supported Tokens**
+
+Each chain supports different tokens. Use the `/chains/{chainId}/tokens` endpoint to get the latest list:
+
+```bash
+GET /v1/chains/ethereum/tokens
+```
+
+**Common tokens across chains:**
+- USDC
+- USDT
+- ETH (native or wrapped)
+- WBTC
+- DAI
+
+---
+
+## **Webhooks**
+
+Warp can send real-time notifications for transfer and payment events. Configure webhooks in your [Platform](https://platform.usewarp.net/webhooks).
+
+### **Webhook Events**
+
+- `transfer.created`
+- `transfer.pending`
+- `transfer.completed`
+- `transfer.failed`
+- `payment.created`
+- `payment.completed`
+- `payment.failed`
+
+### **Webhook Signature Verification**
+
+All webhooks include an `X-Warp-Signature` header. Verify it to ensure requests are from Warp:
+
+```javascript
+const crypto = require('crypto');
+
+function verifyWebhook(payload, signature, secret) {
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex');
+  
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature)
+  );
+}
+```
+
+---
+
+## **API Endpoints**
+
+<CardGroup cols={2}>
+  <Card title="Get Quote" icon="chart-line" href="/api-reference/endpoint/get">
+    Request a quote for a cross-chain transfer or payment.
+  </Card>
+  <Card title="Execute Transfer" icon="arrow-right-arrow-left" href="/api-reference/endpoint/create">
+    Execute a cross-chain transfer using a quote ID.
+  </Card>
+  <Card title="Get Transfer Status" icon="magnifying-glass" href="/api-reference/endpoint/get">
+    Track the status of an in-progress or completed transfer.
+  </Card>
+  <Card title="Webhook Configuration" icon="webhook" href="/api-reference/endpoint/webhook">
+    Configure webhooks to receive real-time event notifications.
+  </Card>
+</CardGroup>
+
+---
+
+## **SDKs and Libraries**
+
+Warp provides official SDKs for popular languages:
+
+<CardGroup cols={3}>
+  <Card title="JavaScript/TypeScript" icon="js">
+    ```bash
+    npm install @usewarp/sdk
+    ```
+  </Card>
+  <Card title="Python" icon="python">
+    ```bash
+    pip install usewarp-sdk
+    ```
+  </Card>
+  <Card title="Go" icon="golang">
+    ```bash
+    go get github.com/warpcompany/warp-go
+    ```
+  </Card>
+</CardGroup>
+
+---
+
+## **Getting Help**
+
+<Card title="Need assistance?" icon="question-circle" horizontal>
+  Join our [Discord community](https://discord.gg/warp) or email [developers@usewarp.net](mailto:developers@usewarp.net) for integration support.
+</Card>

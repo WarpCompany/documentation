@@ -1,80 +1,247 @@
 ---
 title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+description: "Integrate Warp into your application in minutes"
 ---
 
-## Get started in three steps
+# **_Get Started with Warp_**
 
-Get your documentation site running locally and make your first customization.
+**_This guide will walk you through your first Warp integration — from API setup to executing your first cross-chain transfer or payment._**
 
-### Step 1: Set up your local environment
+Whether you're building a wallet, dApp, payment system, or automated trading bot, Warp provides simple APIs and SDKs that abstract the complexity of multi-chain operations.
+
+---
+
+## **Before You Begin**
 
 <AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+  <Accordion icon="key" title="Get API Access">
+    To use Warp's APIs, you'll need an API key:
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
+    1. Visit the [Warp Platform](https://platform.usewarp.net)
+    2. Create an account or sign in
+    3. Navigate to **API Keys** and generate a new key
+    4. Store your key securely — you'll use it in all API requests
+    
+    <Warning>Never expose your API key in client-side code or public repositories.</Warning>
   </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+  <Accordion icon="wallet" title="Set up a test wallet">
+    For testing cross-chain transfers and payments:
     
-    <Tip>Your preview updates automatically as you edit files.</Tip>
+    1. Use a testnet-compatible wallet (MetaMask, WalletConnect, etc.)
+    2. Add testnet networks (Sepolia, Goerli, Mumbai, etc.)
+    3. Fund your wallet with testnet tokens from public faucets
+    
+    <Tip>Warp supports both mainnet and testnet environments. Always test on testnets first.</Tip>
   </Accordion>
 </AccordionGroup>
 
-### Step 2: Deploy your changes
+---
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
+## **Integration Path**
+
+Choose the integration method that best fits your use case:
+
+<CardGroup cols={3}>
+  <Card title="REST API" icon="code">
+    **Best for:** Backend integrations, custom UIs, mobile apps
     
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+    Full control over the user experience with simple HTTP requests.
+  </Card>
+  <Card title="JavaScript SDK" icon="js">
+    **Best for:** Web applications, React apps, frontend integrations
+    
+    Pre-built functions with TypeScript support and automatic retry logic.
+  </Card>
+  <Card title="Embedded Widget" icon="window">
+    **Best for:** Fastest deployment, minimal code changes
+    
+    Drop-in UI component with full cross-chain transfer and payment functionality.
+  </Card>
 </CardGroup>
 
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+---
+
+## **Quick Integration: REST API**
+
+### **Step 1: Get a Cross-Chain Quote**
+
+Request a quote for transferring tokens between chains:
+
+```bash
+curl -X POST https://api.usewarp.net/v1/quote \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sourceChain": "ethereum",
+    "destinationChain": "arbitrum",
+    "sourceToken": "USDC",
+    "destinationToken": "USDC",
+    "amount": "100000000",
+    "recipient": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+  }'
+```
+
+**Response:**
+
+```json
+{
+  "quoteId": "quote_1a2b3c4d5e6f",
+  "sourceAmount": "100000000",
+  "destinationAmount": "99750000",
+  "estimatedFee": "250000",
+  "estimatedTime": "45",
+  "expiresAt": "2025-12-13T10:15:00Z"
+}
+```
+
+### **Step 2: Execute the Transfer**
+
+Once you have a quote, execute the transfer:
+
+```bash
+curl -X POST https://api.usewarp.net/v1/transfer \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "quoteId": "quote_1a2b3c4d5e6f",
+    "userAddress": "0x1234567890abcdef1234567890abcdef12345678"
+  }'
+```
+
+**Response:**
+
+```json
+{
+  "transferId": "transfer_9x8y7z6w5v4u",
+  "status": "pending",
+  "sourceTransaction": {
+    "chainId": 1,
+    "hash": "0xabc123...",
+    "confirmations": 0
+  }
+}
+```
+
+### **Step 3: Track Transfer Status**
+
+Monitor your transfer in real-time:
+
+```bash
+curl https://api.usewarp.net/v1/transfer/transfer_9x8y7z6w5v4u \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+**Response:**
+
+```json
+{
+  "transferId": "transfer_9x8y7z6w5v4u",
+  "status": "completed",
+  "sourceTransaction": {
+    "chainId": 1,
+    "hash": "0xabc123...",
+    "confirmations": 15
+  },
+  "destinationTransaction": {
+    "chainId": 42161,
+    "hash": "0xdef456...",
+    "confirmations": 8
+  },
+  "completedAt": "2025-12-13T10:12:34Z"
+}
+```
+
+---
+
+## **Quick Integration: JavaScript SDK**
+
+### **Installation**
+
+```bash
+npm install @usewarp/sdk
+# or
+yarn add @usewarp/sdk
+```
+
+### **Basic Usage**
+
+```javascript
+import { WarpClient } from '@usewarp/sdk';
+
+// Initialize the client
+const warp = new WarpClient({
+  apiKey: process.env.WARP_API_KEY,
+  environment: 'testnet' // or 'mainnet'
+});
+
+// Get a quote
+const quote = await warp.getQuote({
+  sourceChain: 'ethereum',
+  destinationChain: 'arbitrum',
+  sourceToken: 'USDC',
+  destinationToken: 'USDC',
+  amount: '100000000',
+  recipient: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e'
+});
+
+// Execute transfer
+const transfer = await warp.executeTransfer({
+  quoteId: quote.quoteId,
+  userAddress: walletAddress
+});
+
+// Track status
+const status = await warp.getTransferStatus(transfer.transferId);
+console.log('Transfer status:', status.status);
+```
+
+---
+
+## **Quick Integration: Embedded Widget**
+
+Add the Warp widget to your website with just a few lines of code:
+
+```html
+<!-- Add the Warp widget script -->
+<script src="https://widget.warp.dev/v1/warp-widget.js"></script>
+
+<!-- Add the widget container -->
+<div id="warp-widget"></div>
+
+<script>
+  WarpWidget.init({
+    container: '#warp-widget',
+    apiKey: 'YOUR_PUBLIC_API_KEY',
+    defaultSourceChain: 'ethereum',
+    defaultDestinationChain: 'arbitrum',
+    theme: 'dark' // or 'light'
+  });
+</script>
+```
+
+<Tip>The widget handles wallet connection, quote fetching, and transfer execution automatically.</Tip>
+
+---
+
+## **Next Steps**
+
+<CardGroup cols={2}>
+  <Card title="Explore Warp Bridge" icon="bridge" href="/warp-bridge/introduction">
+    Learn about cross-chain transfer architecture, settlement mechanisms, and privacy features.
+  </Card>
+  <Card title="Payment Integration" icon="credit-card" href="/warp-pay/index">
+    Add universal crypto checkout to accept payments in any token on any chain.
+  </Card>
+  <Card title="API Reference" icon="book" href="/api-reference/introduction">
+    Complete API documentation with all endpoints, parameters, and response schemas.
+  </Card>
+  <Card title="Integration Examples" icon="code-branch" href="/warp-pay/examples">
+    View real-world code samples for wallets, dApps, and payment systems.
+  </Card>
+</CardGroup>
+
+---
+
+<Card title="Need Help?" icon="question-circle" horizontal>
+  Join our [Discord community](https://discord.gg/warp) or contact [support@usewarp.net](mailto:support@usewarp.net) for integration assistance.
+</Card>
