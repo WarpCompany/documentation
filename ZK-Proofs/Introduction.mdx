@@ -1,0 +1,28 @@
+---
+title: "ZK Proofs"
+---
+
+## **Zero-Knowledge Proofs (Operational View)**
+
+A zero-knowledge proof allows a party to prove that a specific computation or set of rules was executed correctly without revealing the private inputs used to perform that computation. The chain does not execute the logic itself. It verifies a proof that the logic was executed correctly off-chain.
+
+Operationally:
+
+- computation and sensitive data stay off-chain
+- the contract only verifies proof validity
+- verification cost is bounded and predictable
+
+This model is used to enforce correctness without exposing data or paying full on-chain execution costs.
+
+## \
+**ZK Contracts Without Writing Solidity**
+
+The system allows users to deploy ZK-powered smart contracts without writing Solidity or implementing ZK circuits manually. Users define constraints — the rules that must be satisfied — and the platform generates the circuit, prover, and on-chain verifier.
+
+At deployment time:
+
+- constraints are compiled into a ZK circuit
+- a verifier contract is deployed on-chain
+- no private logic or data is stored on-chain
+
+The resulting contract behaves like any other Ethereum contract, with the difference that correctness is proven rather than executed.
