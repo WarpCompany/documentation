@@ -1,118 +1,124 @@
 {
-  "$schema": "https://mintlify.com/docs.json",
-  "theme": "almond",
-  "name": "Secure DeFi Infrastructure",
-  "colors": {
-    "primary": "#B429FF",
-    "light": "#B429FF",
-    "dark": "#B429FF"
-  },
-  "favicon": "/favicon.png",
-  "navigation": {
-    "tabs": [
-      {
-        "tab": "Documentation",
-        "groups": [
-          {
-            "group": "Getting Started",
-            "pages": [
-              "index",
-              "quickstart",
-              "products"
-            ]
-          },
-          {
-            "group": "Warp Bridge",
-            "pages": [
-              "warp-bridge/introduction",
-              "warp-bridge/protocol",
-              "warp-bridge/usecases"
-            ]
-          },
-          {
-            "group": "Pay With Warp",
-            "pages": [
-              "warp-pay/index",
-              "warp-pay/examples"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "API Reference",
-        "groups": [
-          {
-            "group": "Introduction",
-            "pages": [
-              "api-reference/introduction"
-            ]
-          },
-          {
-            "group": "Endpoints",
-            "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
-            ]
-          }
-        ]
-      }
-    ],
-    "global": {
-      "anchors": [
+    "$schema": "https://mintlify.com/docs.json",
+    "theme": "almond",
+    "name": "Secure DeFi Infrastructure",
+    "colors": {
+      "primary": "#B429FF",
+      "light": "#B429FF",
+      "dark": "#B429FF"
+    },
+    "favicon": "/favicon.png",
+    "navigation": {
+      "tabs": [
         {
-          "anchor": "Platform",
-          "href": "https://platform.usewarp.net",
-          "icon": "gauge-high"
+          "tab": "Documentation",
+          "groups": [
+            {
+              "group": "Getting Started",
+              "pages": [
+                "index",
+                "quickstart",
+                "products"
+              ]
+            },
+            {
+              "group": "Warp Bridge",
+              "pages": [
+                "warp-bridge/introduction",
+                "warp-bridge/protocol",
+                "warp-bridge/usecases"
+              ]
+            },
+            {
+              "group": "Pay With Warp",
+              "pages": [
+                "warp-pay/index",
+                "warp-pay/examples"
+              ]
+            },
+            { 
+              "group": "ZK-Proofs",
+              "pages": [
+                "ZK-Proofs/introduction"
+              ]
+            }
+          ]
         },
         {
-          "anchor": "Community",
-          "href": "https://discord.gg/warp",
-          "icon": "discord"
-        },
-        {
-          "anchor": "GitHub",
-          "href": "https://github.com/warpcompany",
-          "icon": "github"
+          "tab": "API Reference",
+          "groups": [
+            {
+              "group": "Introduction",
+              "pages": [
+                "api-reference/introduction"
+              ]
+            },
+            {
+              "group": "Endpoints",
+              "pages": [
+                "api-reference/endpoint/get",
+                "api-reference/endpoint/create",
+                "api-reference/endpoint/delete",
+                "api-reference/endpoint/webhook"
+              ]
+            }
+          ]
         }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/logo-black.svg",
-    "dark": "/logo/logo-white.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:support@usewarp.net"
+      ],
+      "global": {
+        "anchors": [
+          {
+            "anchor": "Platform",
+            "href": "https://platform.usewarp.net",
+            "icon": "gauge-high"
+          },
+          {
+            "anchor": "Community",
+            "href": "https://discord.gg/warp",
+            "icon": "discord"
+          },
+          {
+            "anchor": "GitHub",
+            "href": "https://github.com/warpcompany",
+            "icon": "github"
+          }
+        ]
       }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Get Started",
-      "href": "https://platform.usewarp.net"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/warpdefi",
-      "github": "https://github.com/warpcompany",
-      "discord": "https://discord.gg/warp"
+    },
+    "logo": {
+      "light": "/logo/logo-black.svg",
+      "dark": "/logo/logo-white.svg"
+    },
+    "navbar": {
+      "links": [
+        {
+          "label": "Support",
+          "href": "mailto:support@usewarp.net"
+        }
+      ],
+      "primary": {
+        "type": "button",
+        "label": "Get Started",
+        "href": "https://platform.usewarp.net"
+      }
+    },
+    "contextual": {
+      "options": [
+       "copy",
+       "view",
+       "chatgpt",
+       "claude",
+       "perplexity",
+       "mcp",
+       "cursor",
+       "vscode"
+     ]
+    },
+    "footer": {
+      "socials": {
+        "x": "https://x.com/warpdefi",
+        "github": "https://github.com/warpcompany",
+        "discord": "https://discord.gg/warp"
+      }
     }
   }
-}
