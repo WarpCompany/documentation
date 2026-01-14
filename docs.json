@@ -30,7 +30,7 @@
               ]
             },
             {
-              "group": "Pay With Warp",
+              "group": "Payments",
               "pages": [
                 "warp-pay/index",
                 "warp-pay/examples"
@@ -39,7 +39,13 @@
             { 
               "group": "ZK-Proofs",
               "pages": [
-                "ZK-Proofs/introduction"
+                "zkproofs/introduction"
+              ]
+            },
+            { 
+              "group": "ZK-Validators",
+              "pages": [
+                "zkvalidator/introduction"
               ]
             }
           ]
