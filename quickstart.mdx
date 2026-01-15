@@ -3,7 +3,7 @@ title: "Quickstart"
 description: "Integrate Warp into your application in minutes"
 ---
 
-# **_Get Started with Warp_**
+## **_Get Started with Warp_**
 
 **_This guide will walk you through your first Warp integration — from API setup to executing your first cross-chain transfer or payment._**
 
@@ -14,24 +14,28 @@ Whether you're building a wallet, dApp, payment system, or automated trading bot
 ## **Before You Begin**
 
 <AccordionGroup>
-  <Accordion icon="key" title="Get API Access">
+  <Accordion title="Get API Access" icon="key">
     To use Warp's APIs, you'll need an API key:
-    
+
     1. Visit the [Warp Platform](https://platform.usewarp.net)
     2. Create an account or sign in
     3. Navigate to **API Keys** and generate a new key
     4. Store your key securely — you'll use it in all API requests
-    
-    <Warning>Never expose your API key in client-side code or public repositories.</Warning>
+
+    <Warning>
+      Never expose your API key in client-side code or public repositories.
+    </Warning>
   </Accordion>
-  <Accordion icon="wallet" title="Set up a test wallet">
+  <Accordion title="Set up a test wallet" icon="wallet">
     For testing cross-chain transfers and payments:
-    
+
     1. Use a testnet-compatible wallet (MetaMask, WalletConnect, etc.)
     2. Add testnet networks (Sepolia, Goerli, Mumbai, etc.)
     3. Fund your wallet with testnet tokens from public faucets
-    
-    <Tip>Warp supports both mainnet and testnet environments. Always test on testnets first.</Tip>
+
+    <Tip>
+      Warp supports both mainnet and testnet environments. Always test on testnets first.
+    </Tip>
   </Accordion>
 </AccordionGroup>
 
@@ -44,17 +48,17 @@ Choose the integration method that best fits your use case:
 <CardGroup cols={3}>
   <Card title="REST API" icon="code">
     **Best for:** Backend integrations, custom UIs, mobile apps
-    
+
     Full control over the user experience with simple HTTP requests.
   </Card>
   <Card title="JavaScript SDK" icon="js">
     **Best for:** Web applications, React apps, frontend integrations
-    
+
     Pre-built functions with TypeScript support and automatic retry logic.
   </Card>
   <Card title="Embedded Widget" icon="window">
     **Best for:** Fastest deployment, minimal code changes
-    
+
     Drop-in UI component with full cross-chain transfer and payment functionality.
   </Card>
 </CardGroup>
@@ -219,7 +223,9 @@ Add the Warp widget to your website with just a few lines of code:
 </script>
 ```
 
-<Tip>The widget handles wallet connection, quote fetching, and transfer execution automatically.</Tip>
+<Tip>
+  The widget handles wallet connection, quote fetching, and transfer execution automatically.
+</Tip>
 
 ---
 
