@@ -92,7 +92,7 @@
       }
     },
     "logo": {
-      "light": "/logo/logo-black.svg",
+      "light": "/logo/logoblack.png",
       "dark": "/logo/logowhite.png"
     },
     "navbar": {
