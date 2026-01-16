@@ -22,18 +22,18 @@
               ]
             },
             {
+              "group": "Warp Pay",
+              "pages": [
+                "warp-pay/index",
+                "warp-pay/examples"
+              ]
+            },
+            {
               "group": "Warp Bridge",
               "pages": [
                 "warp-bridge/introduction",
                 "warp-bridge/protocol",
                 "warp-bridge/usecases"
-              ]
-            },
-            {
-              "group": "Payments",
-              "pages": [
-                "warp-pay/index",
-                "warp-pay/examples"
               ]
             },
             { 
@@ -43,7 +43,7 @@
               ]
             },
             { 
-              "group": "ZK-Validators",
+              "group": "Validators",
               "pages": [
                 "zkvalidator/introduction"
               ]
