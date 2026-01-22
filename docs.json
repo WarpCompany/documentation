@@ -121,5 +121,12 @@
         "github": "https://github.com/warpcompany",
         "discord": "https://discord.gg/warp"
       }
+    },
+    "banner": {
+      "content": "Payments API now live! Read more at API Reference",
+      "dismissible": true
+    },
+    "styling": {
+      "eyebrows": "section"
     }
   }
