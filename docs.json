@@ -9,6 +9,25 @@
     },
     "favicon": "/favicon.png",
     "navigation": {
+      "global": {
+        "anchors": [
+          {
+            "anchor": "Platform",
+            "icon": "gauge-high",
+            "href": "https://platform.usewarp.net"
+          },
+          {
+            "anchor": "Community",
+            "icon": "discord",
+            "href": "https://discord.gg/warp"
+          },
+          {
+            "anchor": "GitHub",
+            "icon": "github",
+            "href": "https://github.com/warpcompany"
+          }
+        ]
+      },
       "tabs": [
         {
           "tab": "Documentation",
@@ -36,13 +55,13 @@
                 "warp-bridge/usecases"
               ]
             },
-            { 
+            {
               "group": "ZK-Proofs",
               "pages": [
                 "zkproofs/introduction"
               ]
             },
-            { 
+            {
               "group": "Validators",
               "pages": [
                 "zkvalidator/introduction"
@@ -52,34 +71,15 @@
         },
         {
           "tab": "API Reference",
+          "openapi": "api-reference/openapi.json",
           "groups": [
             {
               "group": "Introduction",
               "openapi": "openapi.json"
-
             }
           ]
         }
-      ],
-      "global": {
-        "anchors": [
-          {
-            "anchor": "Platform",
-            "href": "https://platform.usewarp.net",
-            "icon": "gauge-high"
-          },
-          {
-            "anchor": "Community",
-            "href": "https://discord.gg/warp",
-            "icon": "discord"
-          },
-          {
-            "anchor": "GitHub",
-            "href": "https://github.com/warpcompany",
-            "icon": "github"
-          }
-        ]
-      }
+      ]
     },
     "logo": {
       "light": "/logo/logoblack.png",
