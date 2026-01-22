@@ -133,5 +133,8 @@
       "playground": {
         "display": "interactive"
       }
+    },
+    "background": {
+      "decoration": "grid"
     }
   }
