@@ -6,17 +6,17 @@
     "version": "1.0.0",
     "contact": {
       "name": "Warp Support",
-      "email": "support@warp.com"
+      "email": "support@usewarp.net"
     }
   },
   "servers": [
     {
-      "url": "https://platform.warp.com",
-      "description": "Production Platform API"
+      "url": "https://platform.usewarp.net",
+      "description": "Platform API"
     },
     {
-      "url": "https://checkout.warp.com",
-      "description": "Production Checkout API"
+      "url": "https://checkout.usewarp.net",
+      "description": "Checkout API"
     }
   ],
   "security": [
@@ -561,28 +561,6 @@
           }
         },
         "required": ["sessionId", "txHash", "chain", "token", "walletAddress", "amount"]
-      },
-      "CronVerificationResponse": {
-        "type": "object",
-        "properties": {
-          "message": {
-            "type": "string",
-            "description": "Status message"
-          },
-          "verified": {
-            "type": "integer",
-            "description": "Number of transactions verified"
-          },
-          "failed": {
-            "type": "integer",
-            "description": "Number of transactions that failed verification"
-          },
-          "pending": {
-            "type": "integer",
-            "description": "Number of transactions still pending"
-          }
-        },
-        "required": ["verified", "failed", "pending"]
       }
     }
   },
@@ -2701,50 +2679,6 @@
           },
           "500": {
             "description": "Failed to submit transaction",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/cron/verify-pending": {
-      "post": {
-        "summary": "Verify pending transactions (Cron)",
-        "description": "Background job that verifies all pending/processing transactions. Should be called by a cron service every 10 seconds.",
-        "tags": ["Checkout API"],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Verification process completed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CronVerificationResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - invalid cron secret",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Cron job failed",
             "content": {
               "application/json": {
                 "schema": {
