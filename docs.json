@@ -12,6 +12,11 @@
       "global": {
         "anchors": [
           {
+            "anchor": "Home",
+            "icon": "house",
+            "href": "https://usewarp.net"
+          },
+          {
             "anchor": "Platform",
             "icon": "gauge-high",
             "href": "https://platform.usewarp.net"
