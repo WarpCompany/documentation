@@ -13,6 +13,10 @@
     {
       "url": "https://platform.warp.com",
       "description": "Production Platform API"
+    },
+    {
+      "url": "https://checkout.warp.com",
+      "description": "Production Checkout API"
     }
   ],
   "security": [
@@ -424,6 +428,161 @@
           }
         },
         "required": ["id", "project_id", "name", "content", "file_type", "created_at", "updated_at"]
+      },
+      "CreatePaymentSessionRequest": {
+        "type": "object",
+        "properties": {
+          "public_key": {
+            "type": "string",
+            "pattern": "^pk_",
+            "description": "Project public key (starts with pk_)"
+          },
+          "amount_usd": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Amount in USD"
+          },
+          "description": {
+            "type": "string",
+            "description": "Payment description"
+          },
+          "metadata": {
+            "type": "object",
+            "description": "Additional metadata"
+          },
+          "return_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Return URL after successful payment"
+          },
+          "cancel_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Cancel URL if payment is cancelled"
+          }
+        },
+        "required": ["public_key", "amount_usd"]
+      },
+      "PaymentSessionResponse": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Payment session ID"
+          },
+          "checkout_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Checkout page URL"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Session expiration time"
+          }
+        },
+        "required": ["session_id", "checkout_url", "expires_at"]
+      },
+      "PricingResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Success flag"
+          },
+          "pricing": {
+            "type": "object",
+            "description": "Pricing lock data"
+          }
+        },
+        "required": ["success", "pricing"]
+      },
+      "SessionStatusResponse": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "processing", "completed", "failed"],
+            "description": "Session status"
+          },
+          "verification_step": {
+            "type": "string",
+            "enum": ["pending", "confirming", "completed", "failed"],
+            "description": "Verification step"
+          },
+          "tx_hash": {
+            "type": "string",
+            "description": "Transaction hash"
+          },
+          "verified_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Verification timestamp"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Completion timestamp"
+          }
+        },
+        "required": ["session_id", "status", "verification_step"]
+      },
+      "SubmitTransactionRequest": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "Payment session ID"
+          },
+          "txHash": {
+            "type": "string",
+            "pattern": "^0x",
+            "description": "Transaction hash"
+          },
+          "chain": {
+            "type": "string",
+            "description": "Blockchain chain"
+          },
+          "token": {
+            "type": "string",
+            "description": "Token symbol"
+          },
+          "walletAddress": {
+            "type": "string",
+            "description": "Customer wallet address"
+          },
+          "amount": {
+            "type": "string",
+            "description": "Payment amount"
+          }
+        },
+        "required": ["sessionId", "txHash", "chain", "token", "walletAddress", "amount"]
+      },
+      "CronVerificationResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Status message"
+          },
+          "verified": {
+            "type": "integer",
+            "description": "Number of transactions verified"
+          },
+          "failed": {
+            "type": "integer",
+            "description": "Number of transactions that failed verification"
+          },
+          "pending": {
+            "type": "integer",
+            "description": "Number of transactions still pending"
+          }
+        },
+        "required": ["verified", "failed", "pending"]
       }
     }
   },
@@ -2261,6 +2420,331 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pricing": {
+      "get": {
+        "summary": "Get pricing information",
+        "description": "Get real-time pricing with 1-minute lock for payment verification",
+        "tags": ["Checkout API"],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Payment session ID"
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Token symbol (e.g., ETH, USDC)"
+          },
+          {
+            "name": "chain",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Blockchain chain (e.g., ethereum, polygon)"
+          },
+          {
+            "name": "network",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["mainnet", "testnet"],
+              "default": "testnet"
+            },
+            "description": "Network type"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pricing information retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PricingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions": {
+      "post": {
+        "summary": "Create payment session",
+        "description": "Create a new payment session for checkout",
+        "tags": ["Checkout API"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment session created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentSessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to create session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Get payment session",
+        "description": "Retrieve payment session details by session ID",
+        "tags": ["Checkout API"],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Payment session ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment session retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "session": {
+                      "type": "object",
+                      "description": "Payment session object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing session_id parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/status/{sessionId}": {
+      "get": {
+        "summary": "Get session status",
+        "description": "Get the current status of a payment session for frontend polling",
+        "tags": ["Checkout API"],
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Payment session ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session status retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionStatusResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/submit-transaction": {
+      "post": {
+        "summary": "Submit transaction",
+        "description": "Submit a blockchain transaction hash for payment verification",
+        "tags": ["Checkout API"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitTransactionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transaction submitted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Transaction submitted successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to submit transaction",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cron/verify-pending": {
+      "post": {
+        "summary": "Verify pending transactions (Cron)",
+        "description": "Background job that verifies all pending/processing transactions. Should be called by a cron service every 10 seconds.",
+        "tags": ["Checkout API"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verification process completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CronVerificationResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid cron secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Cron job failed",
             "content": {
               "application/json": {
                 "schema": {
