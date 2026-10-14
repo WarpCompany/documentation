@@ -1,6 +1,6 @@
 {
     "$schema": "https://mintlify.com/docs.json",
-    "theme": "almond",
+    "theme": "aspen",
     "name": "Secure DeFi Infrastructure",
     "colors": {
       "primary": "#9E1FAA",
@@ -133,5 +133,8 @@
       "playground": {
         "display": "interactive"
       }
+    },
+    "icons": {
+      "library": "lucide"
     }
   }
