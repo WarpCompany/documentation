@@ -21,10 +21,10 @@ Pay with Warp is a hosted crypto checkout. Your server creates a checkout sessio
     Call [Create a checkout session](/api-reference/checkout-sessions/create) with your secret key and the amount in USD. Sessions can only be created server-side — there are no publishable-key or link-based sessions.
   </Step>
   <Step title="Redirect the customer">
-    Send the customer to the session's `checkout_url`. They connect MetaMask or any WalletConnect-compatible wallet, choose a supported chain and token, and pay. The checkout shows the token amount for your USD price.
+    Send the customer to the session's `checkout_url`. They connect MetaMask or any WalletConnect-compatible wallet, choose a supported chain and token, and pay. The checkout quotes an exact token amount for your USD price, valid for 15 minutes. Stablecoins (USDC, USDT, DAI) are priced at $1. Each quote includes a unique offset of less than one cent that ties the payment to the session, so the customer must send exactly the amount shown.
   </Step>
   <Step title="Warp verifies the payment">
-    Warp checks the transaction on-chain: the chain, recipient address, token contract, amount, timing and the number of confirmations.
+    Warp checks the transaction on-chain: the chain, recipient address, token contract, exact amount, that it was mined after the session was created and before the quote expired, and the number of confirmations. Underpaid, overpaid and late payments fail with a reason.
   </Step>
   <Step title="You get notified">
     Warp sends a `payment.completed` [webhook](/warp-pay/webhooks). You can also [retrieve the session](/api-reference/checkout-sessions/retrieve) at any time.
@@ -52,7 +52,7 @@ Pay with Warp supports EVM chains only.
 
 | Network | Mainnet tokens | Testnet | Testnet tokens | Confirmations (mainnet / testnet) |
 | --- | --- | --- | --- | --- |
-| Ethereum | ETH, USDC, USDT, DAI | Sepolia | ETH, USDC | 3 / 1 |
+| Ethereum | ETH, USDC, USDT, DAI | Sepolia | ETH, USDC | 12 / 1 |
 | Polygon | POL (shown as MATIC), USDC, USDT, DAI | Polygon Amoy | POL, USDC | 64 / 1 |
 | Base | ETH, USDC | Base Sepolia | ETH, USDC | 3 / 1 |
 | Arbitrum | ETH, USDC, USDT, DAI | Arbitrum Sepolia | ETH, USDC | 3 / 1 |
