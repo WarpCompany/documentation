@@ -866,7 +866,7 @@
           "metadata": {
             "type": "object",
             "additionalProperties": true,
-            "description": "Your own key-value data, returned on the session and in webhooks."
+            "description": "Your own key-value data, returned on the session and in webhooks. Keys starting with `_warp_` are reserved and rejected."
           },
           "return_url": {
             "type": "string",
