@@ -4,7 +4,7 @@
 
 Please **do not** open a public GitHub issue for security problems.
 
-Email **support@usewarp.net** with the subject line `SECURITY` and include:
+Email **security@usewarp.net** and include:
 
 - A description of the issue and its impact
 - Steps to reproduce, or a proof of concept

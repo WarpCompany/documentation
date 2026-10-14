@@ -24,7 +24,7 @@ This server-side endpoint creates a payment session with [Create payment session
 ```javascript
 import express from 'express';
 
-const CHECKOUT_API = 'https://checkout.usewarp.net';
+const CHECKOUT_API = 'https://checkout.usewarp.net/api';
 
 const app = express();
 app.use(express.json());
@@ -122,7 +122,7 @@ export default CheckoutButton;
 When the customer returns to your `return_url`, confirm the payment server-side with [Get session status](/api-reference/checkout-api/get-session-status) before fulfilling the order. The redirect alone is not proof of payment.
 
 ```javascript
-const CHECKOUT_API = 'https://checkout.usewarp.net';
+const CHECKOUT_API = 'https://checkout.usewarp.net/api';
 
 async function getSessionStatus(sessionId) {
   const res = await fetch(`${CHECKOUT_API}/status/${encodeURIComponent(sessionId)}`);
@@ -224,7 +224,7 @@ async function handlePaymentCompleted(data) {
 
   // Re-check the session status with the API before fulfilling
   const res = await fetch(
-    `https://checkout.usewarp.net/status/${encodeURIComponent(data.session_id)}`
+    `https://checkout.usewarp.net/api/status/${encodeURIComponent(data.session_id)}`
   );
   const session = await res.json();
 
@@ -254,7 +254,7 @@ import time
 
 import requests
 
-CHECKOUT_API = "https://checkout.usewarp.net"
+CHECKOUT_API = "https://checkout.usewarp.net/api"
 
 
 def create_payment_session(order_id: str, amount_usd: float) -> dict:
@@ -316,5 +316,5 @@ if __name__ == "__main__":
 ---
 
 <Note>
-  **Need help with your integration?** Join our [Discord community](https://discord.gg/warp) or reach out to [developers@usewarp.net](mailto:developers@usewarp.net).
+  **Need help with your integration?** Email [support@usewarp.net](mailto:support@usewarp.net).
 </Note>

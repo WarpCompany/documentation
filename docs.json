@@ -22,14 +22,9 @@
             "href": "https://platform.usewarp.net"
           },
           {
-            "anchor": "Community",
-            "icon": "discord",
-            "href": "https://discord.gg/warp"
-          },
-          {
             "anchor": "GitHub",
             "icon": "github",
-            "href": "https://github.com/warpcompany"
+            "href": "https://github.com/WarpCompany"
           }
         ]
       },
@@ -117,9 +112,7 @@
     },
     "footer": {
       "socials": {
-        "x": "https://x.com/warpdefi",
-        "github": "https://github.com/warpcompany",
-        "discord": "https://discord.gg/warp"
+        "github": "https://github.com/WarpCompany"
       }
     },
     "banner": {

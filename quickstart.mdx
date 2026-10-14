@@ -74,7 +74,7 @@ Choose the integration method that best fits your use case:
 From your backend, create a payment session for the order amount in USD:
 
 ```bash
-curl -X POST https://checkout.usewarp.net/sessions \
+curl -X POST https://checkout.usewarp.net/api/sessions \
   -H "Content-Type: application/json" \
   -d '{
     "public_key": "pk_YOUR_PROJECT_PUBLIC_KEY",
@@ -90,8 +90,8 @@ curl -X POST https://checkout.usewarp.net/sessions \
 
 ```json
 {
-  "session_id": "sess_1a2b3c4d5e6f",
-  "checkout_url": "https://checkout.usewarp.net/sess_1a2b3c4d5e6f",
+  "session_id": "ps_1a2b3c4d5e6f",
+  "checkout_url": "https://checkout.usewarp.net/session/ps_1a2b3c4d5e6f",
   "expires_at": "2026-01-15T10:15:00Z"
 }
 ```
@@ -105,14 +105,14 @@ Send the customer to the returned `checkout_url`. The hosted checkout handles wa
 Poll the session status from your backend:
 
 ```bash
-curl https://checkout.usewarp.net/status/sess_1a2b3c4d5e6f
+curl https://checkout.usewarp.net/api/status/ps_1a2b3c4d5e6f
 ```
 
 **Response:**
 
 ```json
 {
-  "session_id": "sess_1a2b3c4d5e6f",
+  "session_id": "ps_1a2b3c4d5e6f",
   "status": "completed",
   "verification_step": "completed",
   "tx_hash": "0xabc123...",
@@ -130,7 +130,7 @@ curl https://checkout.usewarp.net/status/sess_1a2b3c4d5e6f
 The same flow in Node.js 18+ using the built-in `fetch` API:
 
 ```javascript
-const CHECKOUT_API = 'https://checkout.usewarp.net';
+const CHECKOUT_API = 'https://checkout.usewarp.net/api';
 
 // 1. Create a payment session (server-side)
 async function createPaymentSession(order) {
@@ -172,7 +172,7 @@ console.log('Payment status:', status.status);
 
 ## Embedded Widget (Coming Soon)
 
-A drop-in widget for cross-chain transfers and payments is in development. It is designed to handle wallet connection, quote fetching, and execution automatically, so you can add Warp to a page with a few lines of code. Join our [Discord](https://discord.gg/warp) for updates.
+A drop-in widget for cross-chain transfers and payments is in development. It is designed to handle wallet connection, quote fetching, and execution automatically, so you can add Warp to a page with a few lines of code.
 
 ---
 
@@ -195,6 +195,6 @@ A drop-in widget for cross-chain transfers and payments is in development. It is
 
 ---
 
-<Card title="Need Help?" icon="question-circle" horizontal href="https://discord.gg/warp">
-  Join our Discord community for integration assistance, or email support@usewarp.net.
+<Card title="Need Help?" icon="question-circle" horizontal href="mailto:support@usewarp.net">
+  Email support@usewarp.net for integration assistance.
 </Card>
