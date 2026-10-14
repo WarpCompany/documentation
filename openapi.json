@@ -423,7 +423,7 @@
         ],
         "operationId": "verifyZkProof",
         "summary": "Verify a proof",
-        "description": "Verifies a Groth16 proof off-chain against the proof's stored verification key. With `onchain: true`, also calls `verifyProof` on the proof's deployed verifier contract (allow-listed chains only). Enforces the proof's policies: value rules, a nonce signal (`kind: \"nonce\"`) that must equal the supplied nonce, and a nullifier signal (`kind: \"nullifier\"`) that can only be accepted once per proof. A malformed policy fails closed (`policy: \"invalid_policy\"`, `valid: false`). Returns a signed receipt (compact JWS, EdDSA) that you can verify with the keys from the JWKS endpoint. Only the owning project's secret key can verify its proofs.",
+        "description": "Verifies a Groth16 proof off-chain against the proof's stored verification key. With `onchain: true`, also calls `verifyProof` on the proof's deployed verifier contract (allow-listed chains only). Enforces the proof's policies: value rules, a nonce signal (`kind: \"nonce\"`) that must equal the supplied nonce, and a nullifier signal (`kind: \"nullifier\"`) that can only be accepted once per proof. Attestation circuits also declare `kind: \"project_ref\"` (must equal the stored value) and `kind: \"registry_nonce\"` (enforced by the on-chain registry). A malformed policy fails closed (`policy: \"invalid_policy\"`, `valid: false`). Returns a signed receipt (compact JWS, EdDSA) that you can verify with the keys from the JWKS endpoint. Only the owning project's secret key can verify its proofs.",
         "x-mint": {
           "href": "/api-reference/zk-verification/verify-proof"
         },

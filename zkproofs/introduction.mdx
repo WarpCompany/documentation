@@ -71,6 +71,8 @@ A nonce only stops replay if the proof itself commits to it. Add a public `nonce
 
 - `kind: "nonce"`: `public_signals[signal_index]` must equal the nonce sent to verify. The nonce is then required.
 - `kind: "nullifier"` (optional): the signal is recorded per proof; a second valid proof with the same nullifier is rejected (`checks.nullifier: "reused"`).
+- `kind: "project_ref"` with `value`: the signal must equal your project reference. Warp Verify writes this for attestation circuits.
+- `kind: "registry_nonce"`: the attestation nonce. The Warp attestation registry enforces it on-chain, so the hosted API doesn't check it.
 - `{ "signal_index", "operator", "value" }`: compares the signal with a fixed value (`equals`, `not_equals`, `greater_than`, `less_than`).
 
 A malformed policy entry fails closed: `checks.policy` is `invalid_policy` and `valid` is `false`.
