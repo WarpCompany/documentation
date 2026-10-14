@@ -1,200 +1,67 @@
 ---
-title: "Integration "
-description: "Warp Examples offers ready-to-use code for integrating cross-chain transfers and multi-chain payments."
+title: "Integration Examples"
+description: "Illustrative code samples for integrating Pay With Warp into your applications."
 ---
 
-## **_Warp Examples_**
+## Pay With Warp Examples
 
-**This page provides practical, production-ready code examples for integrating Warp Bridge and Pay With Warp into common application types.**
+This page provides illustrative code examples for integrating Pay With Warp into common application types using the [Checkout API](/api-reference/checkout-api/create-payment-session). They are intended as starting points — adapt error handling, persistence, and security to your own requirements before using them in production.
 
-**Real-world code samples for integrating Warp into your applications. Whether you're building a wallet, dApp, payment gateway, or automated trading system, these examples will help you get up and running quickly.**
+<Note>
+  Official SDKs are coming soon. These examples call the REST API directly using `fetch` (JavaScript) and `requests` (Python). Warp Bridge API examples will be added when the Bridge API becomes available.
+</Note>
 
----
-
-## **Example 1: Basic Cross-Chain Transfer (JavaScript)**
-
-This example shows how to execute a simple cross-chain transfer using the Warp JavaScript SDK.
-
-```javascript
-import { WarpClient } from '@usewarp/sdk';
-
-const warp = new WarpClient({
-  apiKey: process.env.WARP_API_KEY,
-  environment: 'mainnet'
-});
-
-async function transferUSDC() {
-  try {
-    // Step 1: Get a quote
-    const quote = await warp.getQuote({
-      sourceChain: 'ethereum',
-      destinationChain: 'arbitrum',
-      sourceToken: 'USDC',
-      destinationToken: 'USDC',
-      amount: '100000000', // 100 USDC (6 decimals)
-      recipient: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e'
-    });
-
-    console.log('Quote:', quote);
-    console.log(`Fee: ${quote.estimatedFee / 1e6} USDC`);
-    console.log(`Estimated time: ${quote.estimatedTime} seconds`);
-
-    // Step 2: Execute the transfer
-    const transfer = await warp.executeTransfer({
-      quoteId: quote.quoteId,
-      userAddress: userWalletAddress,
-      // Optional: add slippage tolerance
-      maxSlippageBps: 50 // 0.5%
-    });
-
-    console.log('Transfer initiated:', transfer.transferId);
-
-    // Step 3: Monitor status
-    const finalStatus = await warp.waitForCompletion(transfer.transferId, {
-      pollingInterval: 3000, // Check every 3 seconds
-      timeout: 300000 // 5 minute timeout
-    });
-
-    console.log('Transfer completed:', finalStatus);
-    return finalStatus;
-
-  } catch (error) {
-    console.error('Transfer failed:', error);
-    throw error;
-  }
-}
-```
+<Warning>
+  Always create payment sessions on your server, using an amount looked up from your own records. Never trust an amount sent by the browser.
+</Warning>
 
 ---
 
-## **Example 2: Payment Checkout Integration (React)**
+## Example 1: Creating a Payment Session (Node.js)
 
-This example demonstrates how to integrate Pay With Warp into a React e-commerce application.
-
-```jsx
-import { useState } from 'react';
-import { WarpPayment } from '@usewarp/react';
-
-function CheckoutPage({ cartTotal, orderId }) {
-  const [paymentStatus, setPaymentStatus] = useState('pending');
-
-  const handlePaymentSuccess = (payment) => {
-    console.log('Payment successful:', payment);
-    setPaymentStatus('completed');
-    // Update your backend, mark order as paid
-    fetch('/api/orders/complete', {
-      method: 'POST',
-      body: JSON.stringify({
-        orderId,
-        paymentId: payment.paymentId,
-        transactionHash: payment.transactionHash
-      })
-    });
-  };
-
-  const handlePaymentError = (error) => {
-    console.error('Payment failed:', error);
-    setPaymentStatus('failed');
-  };
-
-  return (
-    <div className="checkout-container">
-      <h2>Complete Your Purchase</h2>
-      <div className="order-summary">
-        <p>Total: ${cartTotal}</p>
-        <p>Order ID: {orderId}</p>
-      </div>
-
-      <WarpPayment
-        apiKey={process.env.NEXT_PUBLIC_WARP_API_KEY}
-        amount={cartTotal}
-        currency="USD"
-        acceptedTokens={['USDC', 'USDT', 'ETH', 'WBTC']}
-        acceptedChains={['ethereum', 'arbitrum', 'polygon', 'base']}
-        merchantAddress="0x1234567890abcdef1234567890abcdef12345678"
-        metadata={{
-          orderId,
-          customerEmail: 'customer@example.com'
-        }}
-        onSuccess={handlePaymentSuccess}
-        onError={handlePaymentError}
-        theme="dark"
-      />
-
-      {paymentStatus === 'completed' && (
-        <div className="success-message">
-          ✅ Payment confirmed! Your order is being processed.
-        </div>
-      )}
-    </div>
-  );
-}
-
-export default CheckoutPage;
-```
-
----
-
-## **Example 3: Backend Payment Verification (Node.js)**
-
-This example shows how to verify Warp payments server-side for security.
+This server-side endpoint creates a payment session with [Create payment session](/api-reference/checkout-api/create-payment-session) and returns the hosted `checkout_url` to the browser.
 
 ```javascript
 import express from 'express';
-import { WarpClient } from '@usewarp/sdk';
+
+const CHECKOUT_API = 'https://checkout.usewarp.net';
 
 const app = express();
-const warp = new WarpClient({
-  apiKey: process.env.WARP_API_KEY,
-  environment: 'mainnet'
-});
-
 app.use(express.json());
 
-// Endpoint to verify payment before fulfilling order
-app.post('/api/verify-payment', async (req, res) => {
-  const { paymentId, orderId } = req.body;
+app.post('/api/checkout', async (req, res) => {
+  const { orderId } = req.body;
 
   try {
-    // Fetch payment details from Warp
-    const payment = await warp.getPayment(paymentId);
-
-    // Verify payment is completed
-    if (payment.status !== 'completed') {
-      return res.status(400).json({
-        error: 'Payment not yet completed',
-        status: payment.status
-      });
+    const order = await getOrderFromDatabase(orderId); // your own data layer
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
     }
 
-    // Verify payment amount matches order
-    const order = await getOrderFromDatabase(orderId);
-    if (payment.amountUSD < order.totalAmount) {
-      return res.status(400).json({
-        error: 'Payment amount insufficient'
-      });
-    }
-
-    // Verify payment is for your merchant address
-    if (payment.recipient !== process.env.MERCHANT_ADDRESS) {
-      return res.status(400).json({
-        error: 'Invalid recipient address'
-      });
-    }
-
-    // All checks passed - fulfill the order
-    await fulfillOrder(orderId, payment);
-
-    res.json({
-      success: true,
-      paymentId: payment.paymentId,
-      transactionHash: payment.transactionHash,
-      completedAt: payment.completedAt
+    const warpRes = await fetch(`${CHECKOUT_API}/sessions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        public_key: process.env.WARP_PUBLIC_KEY, // pk_...
+        amount_usd: order.totalUsd,               // e.g. 99.99
+        description: `Order #${orderId}`,
+        metadata: { orderId },
+        return_url: `https://yourstore.com/orders/${orderId}/success`,
+        cancel_url: `https://yourstore.com/orders/${orderId}/cancel`
+      })
     });
 
+    if (!warpRes.ok) {
+      throw new Error(`Warp returned HTTP ${warpRes.status}`);
+    }
+
+    const session = await warpRes.json(); // { session_id, checkout_url, expires_at }
+    await saveSessionId(orderId, session.session_id); // remember which session belongs to which order
+
+    res.json({ checkoutUrl: session.checkout_url });
   } catch (error) {
-    console.error('Payment verification failed:', error);
-    res.status(500).json({ error: 'Verification failed' });
+    console.error('Payment session creation failed:', error);
+    res.status(502).json({ error: 'Could not create payment session' });
   }
 });
 
@@ -205,92 +72,169 @@ app.listen(3000, () => {
 
 ---
 
-## **Example 4: Webhook Handler for Payment Events**
+## Example 2: Payment Checkout Button (React)
 
-Set up webhook listeners to receive real-time payment notifications.
+This example adds a Pay With Warp button to a React storefront. The button calls your own backend (Example 1), which creates the session and returns the hosted checkout URL.
+
+```jsx
+import { useState } from 'react';
+
+function CheckoutButton({ orderId }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function handleCheckout() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId })
+      });
+      if (!res.ok) throw new Error('Could not start checkout');
+
+      const { checkoutUrl } = await res.json();
+      window.location.assign(checkoutUrl); // Redirect to Warp's hosted checkout
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="checkout-container">
+      <button onClick={handleCheckout} disabled={loading}>
+        {loading ? 'Redirecting…' : 'Pay With Warp'}
+      </button>
+      {error && <p className="error">{error}</p>}
+    </div>
+  );
+}
+
+export default CheckoutButton;
+```
+
+---
+
+## Example 3: Verifying a Payment Before Fulfillment (Node.js)
+
+When the customer returns to your `return_url`, confirm the payment server-side with [Get session status](/api-reference/checkout-api/get-session-status) before fulfilling the order. The redirect alone is not proof of payment.
+
+```javascript
+const CHECKOUT_API = 'https://checkout.usewarp.net';
+
+async function getSessionStatus(sessionId) {
+  const res = await fetch(`${CHECKOUT_API}/status/${encodeURIComponent(sessionId)}`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch session status: HTTP ${res.status}`);
+  }
+  return res.json(); // { session_id, status, verification_step, tx_hash, verified_at, completed_at }
+}
+
+async function waitForPayment(sessionId, { intervalMs = 3000, timeoutMs = 10 * 60 * 1000 } = {}) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const session = await getSessionStatus(sessionId);
+    if (session.status === 'completed' || session.status === 'failed') {
+      return session;
+    }
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+  throw new Error(`Timed out waiting for session ${sessionId}`);
+}
+
+// Called from your return_url handler or a background job
+async function fulfillIfPaid(orderId) {
+  const sessionId = await getSessionIdForOrder(orderId); // saved in Example 1
+  const session = await waitForPayment(sessionId);
+
+  if (session.status !== 'completed') {
+    await updateOrderStatus(orderId, 'payment_failed');
+    return false;
+  }
+
+  await updateOrderStatus(orderId, 'paid', { txHash: session.tx_hash });
+  await fulfillOrder(orderId);
+  return true;
+}
+```
+
+---
+
+## Example 4: Webhook Handler for Payment Events (Coming Soon)
+
+<Note>
+  Webhooks are coming soon and are not yet part of the [API Reference](/api-reference/checkout-api/create-payment-session). The event names, payload fields, and `x-warp-signature` header below illustrate the planned design and may change. Until webhooks launch, use status polling (Example 3).
+</Note>
+
+Webhook signatures must be computed over the **raw** request body, so this route uses `express.raw` rather than `express.json`.
 
 ```javascript
 import express from 'express';
 import crypto from 'crypto';
 
 const app = express();
-app.use(express.json());
 
-// Verify webhook signature for security
-function verifyWebhookSignature(payload, signature, secret) {
-  const expectedSignature = crypto
-    .createHmac('sha256', secret)
-    .update(payload)
-    .digest('hex');
-  
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expectedSignature)
+function verifyWebhookSignature(rawBody, signature, secret) {
+  if (typeof signature !== 'string') return false;
+
+  const expected = Buffer.from(
+    crypto.createHmac('sha256', secret).update(rawBody).digest('hex'),
+    'utf8'
   );
+  const received = Buffer.from(signature, 'utf8');
+
+  // timingSafeEqual throws if lengths differ, so check first
+  if (received.length !== expected.length) return false;
+  return crypto.timingSafeEqual(received, expected);
 }
 
-app.post('/webhooks/warp', async (req, res) => {
-  const signature = req.headers['x-warp-signature'];
-  const payload = JSON.stringify(req.body);
+app.post('/webhooks/warp', express.raw({ type: 'application/json' }), async (req, res) => {
+  const signature = req.get('x-warp-signature');
 
-  // Verify the webhook is from Warp
-  if (!verifyWebhookSignature(payload, signature, process.env.WARP_WEBHOOK_SECRET)) {
+  if (!verifyWebhookSignature(req.body, signature, process.env.WARP_WEBHOOK_SECRET)) {
     return res.status(401).json({ error: 'Invalid signature' });
   }
 
-  const event = req.body;
+  const event = JSON.parse(req.body.toString('utf8'));
 
-  // Handle different event types
+  // Deduplicate: the same event may be delivered more than once
+  if (await hasProcessedEvent(event.id)) {
+    return res.json({ received: true });
+  }
+
   switch (event.type) {
     case 'payment.completed':
       await handlePaymentCompleted(event.data);
       break;
-    
     case 'payment.failed':
-      await handlePaymentFailed(event.data);
+      await updateOrderStatus(event.data.metadata?.orderId, 'payment_failed');
       break;
-    
-    case 'transfer.completed':
-      await handleTransferCompleted(event.data);
-      break;
-    
     default:
       console.log('Unhandled event type:', event.type);
   }
 
+  await markEventProcessed(event.id);
   res.json({ received: true });
 });
 
-async function handlePaymentCompleted(payment) {
-  console.log('Payment completed:', payment.paymentId);
-  
-  // Update order status
-  await updateOrderStatus(payment.metadata.orderId, 'paid');
-  
-  // Send confirmation email
-  await sendConfirmationEmail(payment.metadata.customerEmail, payment);
-  
-  // Fulfill digital goods immediately
-  if (payment.metadata.productType === 'digital') {
-    await deliverDigitalGoods(payment.metadata.orderId);
+async function handlePaymentCompleted(data) {
+  const orderId = data.metadata?.orderId;
+
+  // Re-check the session status with the API before fulfilling
+  const res = await fetch(
+    `https://checkout.usewarp.net/status/${encodeURIComponent(data.session_id)}`
+  );
+  const session = await res.json();
+
+  if (session.status !== 'completed') {
+    await flagOrderForReview(orderId, session);
+    return;
   }
-}
 
-async function handlePaymentFailed(payment) {
-  console.error('Payment failed:', payment.paymentId);
-  
-  // Notify customer
-  await sendPaymentFailedEmail(payment.metadata.customerEmail);
-  
-  // Update order status
-  await updateOrderStatus(payment.metadata.orderId, 'payment_failed');
-}
-
-async function handleTransferCompleted(transfer) {
-  console.log('Transfer completed:', transfer.transferId);
-  
-  // Handle completed cross-chain transfer
-  // e.g., update user balance, notify user, etc.
+  await updateOrderStatus(orderId, 'paid', { txHash: session.tx_hash });
+  await fulfillOrder(orderId);
 }
 
 app.listen(8080, () => {
@@ -300,266 +244,69 @@ app.listen(8080, () => {
 
 ---
 
-## **Example 5: Multi-Chain Wallet Integration**
+## Example 5: Creating a Payment Session (Python)
 
-This example shows how to integrate Warp into a multi-chain wallet application.
-
-```typescript
-import { WarpClient } from '@usewarp/sdk';
-import { ethers } from 'ethers';
-
-class WarpWalletIntegration {
-  private warp: WarpClient;
-  private provider: ethers.providers.Web3Provider;
-
-  constructor(apiKey: string) {
-    this.warp = new WarpClient({ apiKey, environment: 'mainnet' });
-  }
-
-  async connectWallet() {
-    this.provider = new ethers.providers.Web3Provider(window.ethereum);
-    await this.provider.send('eth_requestAccounts', []);
-    return this.provider.getSigner().getAddress();
-  }
-
-  async getOptimalRoute(params: {
-    sourceChain: string;
-    destinationChain: string;
-    token: string;
-    amount: string;
-  }) {
-    // Get multiple quotes to find the best route
-    const quotes = await this.warp.getQuotes({
-      sourceChain: params.sourceChain,
-      destinationChain: params.destinationChain,
-      sourceToken: params.token,
-      destinationToken: params.token,
-      amount: params.amount
-    });
-
-    // Sort by best output amount
-    quotes.sort((a, b) => 
-      parseInt(b.destinationAmount) - parseInt(a.destinationAmount)
-    );
-
-    return quotes[0]; // Return best quote
-  }
-
-  async executeCrossChainSwap(params: {
-    sourceChain: string;
-    destinationChain: string;
-    sourceToken: string;
-    destinationToken: string;
-    amount: string;
-    recipient: string;
-  }) {
-    // Get quote
-    const quote = await this.warp.getQuote(params);
-
-    // Show user confirmation
-    const confirmed = await this.showUserConfirmation({
-      sourceAmount: quote.sourceAmount,
-      destinationAmount: quote.destinationAmount,
-      fee: quote.estimatedFee,
-      estimatedTime: quote.estimatedTime
-    });
-
-    if (!confirmed) {
-      throw new Error('User cancelled transaction');
-    }
-
-    // Execute transfer
-    const userAddress = await this.connectWallet();
-    const transfer = await this.warp.executeTransfer({
-      quoteId: quote.quoteId,
-      userAddress,
-      maxSlippageBps: 100 // 1% slippage tolerance
-    });
-
-    // Track progress
-    return this.trackTransferProgress(transfer.transferId);
-  }
-
-  async trackTransferProgress(transferId: string) {
-    return new Promise((resolve, reject) => {
-      const checkStatus = async () => {
-        try {
-          const status = await this.warp.getTransferStatus(transferId);
-          
-          this.updateUI(status);
-
-          if (status.status === 'completed') {
-            resolve(status);
-          } else if (status.status === 'failed') {
-            reject(new Error('Transfer failed'));
-          } else {
-            // Check again in 3 seconds
-            setTimeout(checkStatus, 3000);
-          }
-        } catch (error) {
-          reject(error);
-        }
-      };
-
-      checkStatus();
-    });
-  }
-
-  private updateUI(status: any) {
-    // Update wallet UI with transfer progress
-    console.log('Transfer status:', status.status);
-    // Emit event for UI to handle
-    window.dispatchEvent(new CustomEvent('warp-transfer-update', {
-      detail: status
-    }));
-  }
-
-  private async showUserConfirmation(details: any): Promise<boolean> {
-    // Show confirmation modal in your UI
-    return confirm(`
-      Transfer ${details.sourceAmount} tokens
-      Receive: ${details.destinationAmount}
-      Fee: ${details.fee}
-      Est. time: ${details.estimatedTime}s
-      
-      Confirm?
-    `);
-  }
-}
-
-// Usage
-const warpIntegration = new WarpWalletIntegration(process.env.WARP_API_KEY);
-
-async function handleCrossChainTransfer() {
-  try {
-    const result = await warpIntegration.executeCrossChainSwap({
-      sourceChain: 'ethereum',
-      destinationChain: 'arbitrum',
-      sourceToken: 'USDC',
-      destinationToken: 'USDC',
-      amount: '1000000000', // 1000 USDC
-      recipient: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e'
-    });
-    
-    console.log('Transfer completed:', result);
-  } catch (error) {
-    console.error('Transfer error:', error);
-  }
-}
-```
-
----
-
-## **Example 6: Automated Trading Bot**
-
-This example demonstrates using Warp for cross-chain arbitrage.
+The same session-creation and status flow using [`requests`](https://requests.readthedocs.io/):
 
 ```python
-import asyncio
-from warp_sdk import WarpClient
-from decimal import Decimal
+import os
+import time
 
-class CrossChainArbitrageBot:
-    def __init__(self, api_key: str):
-        self.warp = WarpClient(api_key=api_key, environment='mainnet')
-        self.min_profit_threshold = Decimal('0.005')  # 0.5% minimum profit
-    
-    async def find_arbitrage_opportunities(self):
-        """Scan for profitable cross-chain arbitrage"""
-        chains = ['ethereum', 'arbitrum', 'polygon', 'base']
-        tokens = ['USDC', 'USDT', 'DAI']
-        
-        for source_chain in chains:
-            for dest_chain in chains:
-                if source_chain == dest_chain:
-                    continue
-                
-                for token in tokens:
-                    await self.check_arbitrage(source_chain, dest_chain, token)
-    
-    async def check_arbitrage(self, source_chain: str, dest_chain: str, token: str):
-        """Check if arbitrage is profitable"""
-        amount = '1000000000'  # 1000 tokens (assuming 6 decimals)
-        
-        # Get forward quote
-        forward_quote = await self.warp.get_quote(
-            source_chain=source_chain,
-            destination_chain=dest_chain,
-            source_token=token,
-            destination_token=token,
-            amount=amount
-        )
-        
-        # Get reverse quote
-        reverse_quote = await self.warp.get_quote(
-            source_chain=dest_chain,
-            destination_chain=source_chain,
-            source_token=token,
-            destination_token=token,
-            amount=forward_quote['destinationAmount']
-        )
-        
-        # Calculate profit
-        initial = Decimal(amount)
-        final = Decimal(reverse_quote['destinationAmount'])
-        profit_pct = (final - initial) / initial
-        
-        if profit_pct > self.min_profit_threshold:
-            print(f"🎯 Arbitrage opportunity found!")
-            print(f"Route: {source_chain} -> {dest_chain} -> {source_chain}")
-            print(f"Token: {token}")
-            print(f"Profit: {profit_pct * 100:.2f}%")
-            
-            # Execute if profitable
-            await self.execute_arbitrage(forward_quote, reverse_quote)
-    
-    async def execute_arbitrage(self, forward_quote, reverse_quote):
-        """Execute arbitrage trade"""
-        # Execute first leg
-        transfer1 = await self.warp.execute_transfer(
-            quote_id=forward_quote['quoteId'],
-            user_address=self.wallet_address
-        )
-        
-        # Wait for completion
-        await self.warp.wait_for_completion(transfer1['transferId'])
-        
-        # Execute second leg
-        transfer2 = await self.warp.execute_transfer(
-            quote_id=reverse_quote['quoteId'],
-            user_address=self.wallet_address
-        )
-        
-        # Wait for completion
-        result = await self.warp.wait_for_completion(transfer2['transferId'])
-        
-        print(f"✅ Arbitrage completed: {result}")
+import requests
 
-# Run the bot
-async def main():
-    bot = CrossChainArbitrageBot(api_key='your_api_key')
-    
-    # Scan for opportunities every 10 seconds
-    while True:
-        await bot.find_arbitrage_opportunities()
-        await asyncio.sleep(10)
+CHECKOUT_API = "https://checkout.usewarp.net"
 
-asyncio.run(main())
+
+def create_payment_session(order_id: str, amount_usd: float) -> dict:
+    resp = requests.post(
+        f"{CHECKOUT_API}/sessions",
+        json={
+            "public_key": os.environ["WARP_PUBLIC_KEY"],  # pk_...
+            "amount_usd": amount_usd,
+            "description": f"Order #{order_id}",
+            "metadata": {"orderId": order_id},
+            "return_url": f"https://yourstore.com/orders/{order_id}/success",
+            "cancel_url": f"https://yourstore.com/orders/{order_id}/cancel",
+        },
+        timeout=10,
+    )
+    resp.raise_for_status()
+    return resp.json()  # {"session_id", "checkout_url", "expires_at"}
+
+
+def wait_for_payment(session_id: str, interval: float = 3, timeout: float = 600) -> dict:
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        resp = requests.get(f"{CHECKOUT_API}/status/{session_id}", timeout=10)
+        resp.raise_for_status()
+        session = resp.json()
+        if session["status"] in ("completed", "failed"):
+            return session
+        time.sleep(interval)
+    raise TimeoutError(f"Session {session_id} did not finish in time")
+
+
+if __name__ == "__main__":
+    session = create_payment_session("1234", 49.99)
+    print("Send the customer to:", session["checkout_url"])
+
+    result = wait_for_payment(session["session_id"])
+    print("Final status:", result["status"], result.get("tx_hash"))
 ```
 
 ---
 
-## **Additional Resources**
+## Additional Resources
 
 <CardGroup cols={2}>
-  <Card title="API Reference" icon="book" href="/api-reference/introduction">
-    Complete API documentation with all endpoints and parameters.
+  <Card title="API Reference" icon="book" href="/api-reference/checkout-api/create-payment-session">
+    API documentation with all endpoints and parameters.
   </Card>
-  <Card title="SDK Documentation" icon="code" href="/api-reference/introduction">
-    Detailed guides for JavaScript, Python, and Go SDKs.
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Step-by-step guide to your first payment session.
   </Card>
   <Card title="Protocol Design" icon="microscope" href="/warp-bridge/protocol">
-    Understand how Warp's cross-chain settlement works under the hood.
+    Understand how Warp Bridge's cross-chain settlement works under the hood.
   </Card>
   <Card title="Use Cases" icon="lightbulb" href="/warp-bridge/usecases">
     Explore different ways to integrate Warp into your application.

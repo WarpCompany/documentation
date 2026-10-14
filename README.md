@@ -1,44 +1,63 @@
-# Mintlify Starter Kit
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./logo/logo-white.svg" />
+    <img src="./logo/logo-black.svg" alt="Warp" height="56" />
+  </picture>
+</p>
 
-Use the starter kit to get your docs deployed and ready to customize.
+<h1 align="center">Warp Docs</h1>
 
-Click the green **Use this template** button at the top of this repo to copy the Mintlify starter kit. The starter kit contains examples with
+<p align="center">
+  Source for the Warp developer documentation at <a href="https://developer.usewarp.net">developer.usewarp.net</a>.
+</p>
 
-- Guide pages
-- Navigation
-- Customizations
-- API reference pages
-- Use of popular components
+<p align="center">
+  <a href="https://developer.usewarp.net"><img src="https://img.shields.io/badge/docs-developer.usewarp.net-B429FF" alt="Docs" /></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT" /></a>
+</p>
 
-[**Follow the full quickstart guide**](https://starter.mintlify.com/quickstart)
+---
 
-## Development
+Warp is privacy-preserving payment and cross-chain infrastructure for developers. This repository contains the guides, product overviews, and API reference for:
 
-Install the [Mintlify CLI](https://www.npmjs.com/package/mint) to preview your documentation changes locally. To install, use the following command:
+- **Pay With Warp** — accept crypto payments from any supported chain
+- **Warp Bridge** — move assets across chains
+- **ZK Proofs as a Service** and the **ZK Validator Network** _(coming soon)_
 
-```
+## Local development
+
+The site is built with [Mintlify](https://mintlify.com). You need Node.js 19 or later.
+
+```bash
 npm i -g mint
-```
-
-Run the following command at the root of your documentation, where your `docs.json` is located:
-
-```
 mint dev
 ```
 
-View your local preview at `http://localhost:3000`.
+The preview runs at `http://localhost:3000`.
 
-## Publishing changes
+## Structure
 
-Install our GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app) to propagate changes from your repo to your deployment. Changes are deployed to production automatically after pushing to the default branch.
+| Path               | Contents                                   |
+| ------------------ | ------------------------------------------ |
+| `docs.json`        | Site configuration and navigation          |
+| `index.mdx`        | Landing page                               |
+| `quickstart.mdx`   | Getting started guide                      |
+| `products.mdx`     | Product overview                           |
+| `warp-pay/`        | Pay With Warp guides and examples          |
+| `warp-bridge/`     | Warp Bridge guides and protocol design     |
+| `zkproofs/`        | ZK Proofs as a Service                     |
+| `zkvalidator/`     | ZK Validator Network                       |
+| `openapi.json`     | OpenAPI spec that powers the API reference |
+| `images/`, `logo/` | Static assets                              |
 
-## Need help?
+New pages must be added to the `navigation` section of `docs.json` to appear in the sidebar.
 
-### Troubleshooting
+## Contributing
 
-- If your dev environment isn't running: Run `mint update` to ensure you have the most recent version of the CLI.
-- If a page loads as a 404: Make sure you are running in a folder with a valid `docs.jsom`.
+Fixes and improvements are welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-### Resources
+To report a security issue, follow [SECURITY.md](./SECURITY.md) instead of opening an issue.
 
-- [Mintlify documentation](https://mintlify.com/docs)
+## License
+
+[MIT](./LICENSE)

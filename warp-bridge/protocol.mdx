@@ -1,48 +1,52 @@
 ---
 title: "Protocol"
-description: "Warp Bridge uses a two-layer system with solvers and smart contracts for instant, secure cross-chain transfers."
+description: "Warp Bridge uses a two-layer design of on-chain contracts and permissionless solvers for fast, trust-minimized cross-chain transfers."
 ---
 
-## **Warp Bridge Architecture**
+## Warp Bridge Architecture
 
-**Warp Bridge is built on a two-layer architecture designed for speed, security, and trust-minimized cross-chain settlement. Instead of relying on wrapped assets, custodial multisigs, or global liquidity pools, Warp uses deterministic on-chain contracts and permissionless solver participation to move value instantly between chains.**
+Warp Bridge is built on a two-layer architecture designed for speed, security, and trust-minimized cross-chain settlement. Instead of relying on wrapped assets, custodial multisigs, or global liquidity pools, Warp uses deterministic on-chain contracts and permissionless solver participation to move value quickly between chains.
+
+<Note>
+  Warp Bridge is under active development. This page describes the protocol design; details may change before launch.
+</Note>
 
 ---
 
-## **1. Protocol Layer (On-Chain Contracts)**
+## 1. Protocol Layer (On-Chain Contracts)
 
 The Protocol Layer is the cryptographic backbone of Warp Bridge. Each supported chain hosts two lightweight contracts — **WarpSource** and **WarpDestination** — responsible for secure order creation, validation, and settlement.
 
-### **WarpSource (Origin Chain Contract)**
+### WarpSource (Origin Chain Contract)
 
-WarpSource handles the beginning of every transfer. When a user creates an order, the contract locks their tokens, assigns a deterministic order ID, stores the order’s state, and emits the event that solvers listen for. The user’s funds remain fully locked and in their control until the order is fulfilled or canceled.
+WarpSource handles the beginning of every transfer. When a user creates an order, the contract locks their tokens, assigns a deterministic order ID, stores the order’s state, and emits the event that solvers listen for. The user’s funds remain locked in the contract — releasable only through fulfillment or the user’s own cancellation — until the order reaches a final state.
 
-### **WarpDestination (Settlement Chain Contract)**
+### WarpDestination (Settlement Chain Contract)
 
-WarpDestination validates solver attempts to fulfill an order. When a solver supplies the destination tokens directly to the recipient, the contract verifies the order ID, checks that it hasn’t been fulfilled or canceled, and—if valid—marks it as fulfilled. The user receives their tokens instantly on the destination chain.
+WarpDestination validates solver attempts to fulfill an order. When a solver supplies the destination tokens directly to the recipient, the contract verifies the order ID, checks that it hasn’t been fulfilled or canceled, and—if valid—marks it as fulfilled. The user receives their tokens on the destination chain as soon as the fulfillment transaction is confirmed.
 
 After fulfillment, WarpDestination sends an authenticated cross-chain unlock message back to WarpSource, releasing the user’s locked tokens to the solver.
 
-### **Deterministic Order IDs**
+### Deterministic Order IDs
 
-Every order is represented by a unique, tamper-proof hash derived from user, token, chain, and security parameters. This prevents replay attacks, spoofing, or unauthorized modifications.
+Every order is represented by a unique, tamper-resistant hash derived from user, token, chain, and security parameters. This is designed to prevent replay attacks, spoofing, or unauthorized modifications.
 
 ---
 
-## **2. Solver Layer (Off-Chain + On-Chain Execution)**
+## 2. Solver Layer (Off-Chain + On-Chain Execution)
 
 The Solver Layer is a permissionless network of independent actors—market makers, automated bots, and liquidity networks—that compete to fulfill user orders.
 
-### **How Solvers Operate**
+### How Solvers Operate
 
 Solvers monitor new WarpSource orders, evaluate the profitability and safety of fulfilling them, and when ready, supply destination-chain liquidity directly to the user. They perform two core operations:
 
 - **Off-chain:** monitoring, pricing, and risk modeling
 - **On-chain:** fulfilling orders and triggering unlock messages
 
-Because solvers use their own liquidity to execute transfers instantly, users receive tokens on the destination chain without waiting for slow cross-chain communication.
+Because solvers use their own liquidity to execute transfers, users receive tokens on the destination chain without waiting for slow cross-chain communication.
 
-### **Settlement for Solvers**
+### Settlement for Solvers
 
 Once fulfillment is complete, the solver requests an unlock. Warp’s messaging layer verifies signatures, chain IDs, and contract identities before releasing the locked funds from the source chain.
 
@@ -50,57 +54,56 @@ Solvers earn the spread between input and output amounts.
 
 ---
 
-## **Warp Bridge Transfer Lifecycle**
+## Warp Bridge Transfer Lifecycle
 
 The entire cross-chain flow is designed to minimize trust, reduce latency, and preserve user control at every stage.
 
-### **1. Order Creation**
+### 1. Order Creation
 
 The user selects source chain, destination chain, token pair, and amount. WarpSource locks the funds, emits an on-chain order, and waits for solver activity.
 
-### **2. Solver Evaluation**
+### 2. Solver Evaluation
 
 Solvers detect the order and decide whether to fulfill it based on liquidity, gas conditions, finality, and potential profit. Multiple solvers may compete, creating a market that drives fast settlement.
 
-### **3. Destination Fulfillment**
+### 3. Destination Fulfillment
 
 A solver delivers tokens to the recipient on the destination chain and submits the order parameters to WarpDestination. The contract reconstructs the order ID, validates its authenticity, and marks it fulfilled. The user now has their tokens.
 
-### **4. Cross-Chain Settlement**
+### 4. Cross-Chain Settlement
 
 WarpDestination sends an unlock message to WarpSource. After verification, WarpSource releases the user’s originally locked tokens to the solver. The order reaches its final state.
 
 ---
 
-## **Order Cancellation**
+## Order Cancellation
 
-If no solver fulfills the order, the user can cancel at any time. WarpDestination issues a cancel message, WarpSource unlocks the funds, and the order ends safely.
+If no solver has fulfilled the order, the user can cancel it. WarpDestination issues a cancel message, WarpSource unlocks the funds, and the order ends safely.
 
 ---
 
-## **Risk Model**
+## Risk Model
 
-Warp distributes risk transparently:
+Warp aims to distribute risk transparently:
 
-### **User Risk**
+### User Risk
 
-Minimal. Funds remain locked on-chain under their own control and can be canceled at any time until a solver commits liquidity.
+User funds are held by non-custodial contracts rather than a third party, and an order can be canceled until a solver commits liquidity. As with any on-chain protocol, users remain exposed to smart contract risk and to the security of the cross-chain messaging layer.
 
-### **Solver Risk**
+### Solver Risk
 
 Solvers bear chain-reorg and messaging-finality risk. These are mitigated through configurable confirmation thresholds, replay protection, validator signatures, and strict contract-level verification.
 
 ---
 
-## **Why This Architecture Works**
+## Why This Architecture Works
 
-Warp achieves instant, secure cross-chain settlement without centralized trust assumptions.\
-The architecture delivers:
+Warp is designed to deliver fast, secure cross-chain settlement while minimizing centralized trust assumptions. The architecture aims to provide:
 
 - Direct, on-chain settlement
 - High capital efficiency
 - Permissionless solver participation
-- Strong finality and cryptographic guarantees
-- Growing privacy as adoption increases
+- Strong finality through on-chain verification
+- Growing privacy as adoption increases _(Roadmap)_
 
-Warp Bridge is designed for high performance today, and even stronger privacy and trust minimization in future iterations.
+Warp Bridge is designed for high performance, with stronger privacy and trust minimization planned for future iterations.

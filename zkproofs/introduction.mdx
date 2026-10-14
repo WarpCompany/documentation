@@ -1,122 +1,122 @@
 ---
 title: "Get Started"
-description: "Zero-Knowledge Proofs enable private, verifiable smart contracts with off-chain ZK validation."
+description: "Zero-knowledge proofs enable private, verifiable smart contracts with off-chain computation and on-chain verification."
 ---
 
-![Zk Proofs](/images/zk-proofs.jpg)
+![ZK Proofs](/images/zk-proofs.jpg)
 
-## **Building ZK-Proofs with Warp**
+## Building ZK Proofs with Warp
 
-**_A zero-knowledge proof allows a party to prove that a specific computation or set of rules was executed correctly without revealing the private inputs used to perform that computation. The chain does not execute the logic itself. It verifies a proof that the logic was executed correctly off-chain._**
+A zero-knowledge proof allows a party to prove that a specific computation or set of rules was executed correctly without revealing the private inputs used to perform that computation. The chain does not execute the logic itself. It verifies a proof that the logic was executed correctly off-chain.
 
 <Info>
-  Write, compile & deploy ZK-Proofs on our platform. [Get Started](https://platform.usewarp.net)
+  ZK Proofs as a Service is in **beta**. Write, compile, and deploy ZK proofs on the [Warp Platform](https://platform.usewarp.net), or programmatically with the [ZK Proofs API](/api-reference/zk-proofs/list-zk-proofs).
 </Info>
 
-_Operationally:_
+Operationally:
 
-- **_computation and sensitive data stay off-chain_**
-- **_the contract only verifies proof validity_**
-- **_verification cost is bounded and predictable_**
+- Computation and sensitive data stay off-chain
+- The contract only verifies proof validity
+- Verification cost is bounded and predictable
 
-_This model is used to enforce correctness without exposing data or paying full on-chain execution costs._
+This model is used to enforce correctness without exposing data or paying full on-chain execution costs.
 
-## **ZK Contracts Without Writing Solidity**
+## ZK Contracts Without Writing Solidity
 
-_The system allows users to deploy ZK-powered smart contracts without writing Solidity or implementing ZK circuits manually. Users define constraints — the rules that must be satisfied — and the platform generates the circuit, prover, and on-chain verifier._
+The system is designed to let users deploy ZK-powered smart contracts without writing Solidity or implementing ZK circuits manually. Users define constraints — the rules that must be satisfied — and the platform generates the circuit, prover, and on-chain verifier. Developers who prefer to write circuits directly can also create and compile their own Circom projects.
 
-_At deployment time:_
+At deployment time:
 
-- **_constraints are compiled into a ZK circuit_**
-- **_a verifier contract is deployed on-chain_**
-- **_no private logic or data is stored on-chain_**
+- Constraints are compiled into a ZK circuit
+- A verifier contract is deployed on-chain
+- No private logic or data is stored on-chain
 
-_The resulting contract behaves like any other Ethereum contract, with the difference that correctness is proven rather than executed._
+The resulting contract behaves like any other Ethereum contract, with the difference that correctness is proven rather than executed.
 
-## **Constraint Definition (What Users Actually Specify)**
+## Constraint Definition (What Users Specify)
 
-_Users define constraints that describe what must be true for a proof to verify. These constraints map directly to circuit conditions and verifier checks._
+Users define constraints that describe what must be true for a proof to verify. These constraints map directly to circuit conditions and verifier checks.
 
-_Typical examples include:_
+Typical examples include:
 
-**_Trading rules_**
+**Trading rules**
 
-- **_a trade size is within a defined range_**
-- **_execution price is within a tolerance of a reference price_**
-- **_slippage remains below a fixed threshold_**
+- A trade size is within a defined range
+- Execution price is within a tolerance of a reference price
+- Slippage remains below a fixed threshold
 
-_The contract enforces the rule without revealing trade size, entry price, or strategy._
+The contract enforces the rule without revealing trade size, entry price, or strategy.
 
-**_Risk limits_**
+**Risk limits**
 
-- **_wallet balance is above a minimum_**
-- **_leverage stays below a maximum_**
-- **_drawdown remains within bounds_**
+- Wallet balance is above a minimum
+- Leverage stays below a maximum
+- Drawdown remains within bounds
 
-_The proof shows compliance with the risk model without exposing balances or positions._
+The proof shows compliance with the risk model without exposing balances or positions.
 
-**_Strategy proofs_**
+**Strategy proofs**
 
-- **_a sequence of actions followed predefined logic_**
-- **_parameters stayed within allowed ranges_**
-- **_outputs were derived from approved inputs_**
+- A sequence of actions followed predefined logic
+- Parameters stayed within allowed ranges
+- Outputs were derived from approved inputs
 
-_This allows users to prove a strategy was followed without revealing the strategy itself._
-
----
-
-## **Proof Flow and On-Chain Verification**
-
-_Proofs are generated off-chain using private inputs and the deployed circuit. The proof is submitted to the verifier contract, which performs a cryptographic check and gates execution on the result._
-
-_What matters for implementation:_
-
-- **_the contract never receives private inputs_**
-- **_only the proof and public parameters are submitted_**
-- **_execution is conditional on proof validity_**
-
-_If the proof verifies, the contract proceeds. If it fails, the transaction reverts._
+This allows users to prove a strategy was followed without revealing the strategy itself.
 
 ---
 
-## **Dashboard vs API (Same System, Different Interfaces)**
+## Proof Flow and On-Chain Verification
 
-_The Dashboard and API are two interfaces over the same contract and circuit generation system._
+Proofs are generated off-chain using private inputs and the deployed circuit. The proof is submitted to the verifier contract, which performs a cryptographic check and gates execution on the result.
 
-_The Dashboard is intended for rapid definition and deployment:_
+What matters for implementation:
 
-- **_constraints are defined declaratively_**
-- **_contracts are generated and deployed automatically_**
+- The contract never receives private inputs
+- Only the proof and public parameters are submitted
+- Execution is conditional on proof validity
 
-_The API exposes the same capabilities programmatically:_
-
-- **_constraints defined as structured inputs_**
-- **_integration into bots, backends, or automated systems_**
-
-_There is no functional difference in the resulting contracts._
+If the proof verifies, the contract proceeds. If it fails, the transaction reverts.
 
 ---
 
-## **Running Contracts on the Network**
+## Dashboard vs API (Same System, Different Interfaces)
 
-_Verification on Ethereum has a fixed cost ceiling, but that cost is non-trivial at scale. The system will support running ZK contracts on a dedicated network where proof validation is performed by decentralized providers._
+The Dashboard and API are two interfaces over the same contract and circuit generation system.
 
-_In this model:_
+The Dashboard is intended for rapid definition and deployment:
 
-- **_proofs are validated off-chain by independent validators_**
-- **_computation does not touch Ethereum_**
-- **_settlement or finalization can anchor to L1_**
+- Constraints are defined declaratively
+- Contracts are generated and deployed automatically
 
-_This preserves correctness guarantees while significantly reducing execution cost._
+The API exposes the same capabilities programmatically:
+
+- Constraints defined as structured inputs
+- Integration into bots, backends, or automated systems
+
+There is no functional difference in the resulting contracts.
 
 ---
 
-## **Design Goals**
+## Running Contracts on the Network _(Coming Soon)_
 
-_The system is built around a few core principles:_
+Verification on Ethereum has a fixed cost ceiling, but that cost is non-trivial at scale. The system is planned to support running ZK contracts on a dedicated network where proof validation is performed by decentralized providers through the [ZK Validator Network](/zkvalidator/introduction).
 
-- **_ZK should be a primitive, not a specialization_**
-- **_users define intent, not cryptographic machinery_**
-- **_contracts must remain verifiable, deterministic, and trust-minimized_**
+In this model:
 
-_For developers, this removes the need to build and maintain ZK infrastructure.For degens, it enables enforceable rules without leaking information or edge._
+- Proofs are validated off-chain by independent validators
+- Computation does not touch Ethereum
+- Settlement or finalization can anchor to L1
+
+This is designed to preserve correctness guarantees while significantly reducing execution cost.
+
+---
+
+## Design Goals
+
+The system is built around a few core principles:
+
+- ZK should be a primitive, not a specialization
+- Users define intent, not cryptographic machinery
+- Contracts must remain verifiable, deterministic, and trust-minimized
+
+For developers, this removes the need to build and maintain ZK infrastructure. For traders and advanced users, it enables enforceable rules without leaking information or edge.

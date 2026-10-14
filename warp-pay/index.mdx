@@ -1,50 +1,54 @@
 ---
 title: "Get Started"
-description: "Warp Pay enables instant, cross-chain crypto payments with trust-less settlement and built-in privacy."
+description: "Pay With Warp lets customers pay with crypto across chains while merchants receive the asset they choose."
 ---
 
 <img
   src="/payments(1).jpg"
-  alt="Payments"
-  title="Payments"
+  alt="Pay With Warp"
+  title="Pay With Warp"
   className="mx-auto"
   style={{ width:"100%" }}
 />
 
 ## Pay With Warp
 
-**Warp Pay is a unified cross-chain protocol that enables one-click transfers and payments by handling routing, conversion, and settlement across chains. Powered by Warp Bridge for fast, no-KYC transfers, Pay With Warp lets users pay with any token on any supported chain while merchants receive their preferred asset, with future crypto-to-cash payouts planned.**
+Pay With Warp is a checkout solution that lets customers pay using a supported token on a supported chain, while merchants receive their preferred asset. You create a payment session with the [Checkout API](/api-reference/checkout-api/create-payment-session), send the customer to Warp's hosted checkout, and track the payment until it completes. Over time, Pay With Warp is designed to use Warp Bridge for cross-chain routing and conversion, with crypto-to-fiat payouts planned.
 
-Warp is designed with three long-term priorities:
+<Note>
+  Warp is under active development. Features marked **Coming Soon** or **Roadmap** are not yet available, and their descriptions reflect design goals rather than current behavior.
+</Note>
 
-### **1. Universal Access**
+Pay With Warp is designed around three long-term priorities:
 
-Warp removes the burden of choosing chains, swapping tokens, or bridging manually. One integration unlocks multi-chain support for users and developers alike.
+### 1. Universal Access
 
-### **2. Instant Settlement**
+Warp removes the burden of choosing chains, swapping tokens, or bridging manually. One integration is designed to unlock multi-chain support for users and developers alike.
 
-To deliver real-time payment experiences, Warp integrates zero-knowledge proofs that allow instant confirmation of transactions. Merchants can release digital goods immediately, without waiting for block finality.
+### 2. Fast Settlement
 
-### **3. Privacy by Default**
+Pay With Warp is designed for real-time payment experiences. On the roadmap, Warp plans to integrate zero-knowledge proofs to enable near-real-time payment confirmation, so merchants can release digital goods without waiting for full block finality.
 
-As the Warp Bridge evolves, every transaction — including Pay With Warp payments — will flow through Warp’s privacy layer. This ensures transfers are unlinkable and shielded, making Warp a fully private crypto payment rail.
+### 3. Privacy by Design _(Roadmap)_
 
-Under the hood, Warp uses a solver-based architecture (similar to modern cross-chain liquidity networks) to ensure optimal settlement routes, competitive pricing, and efficient liquidity use. But for developers and end users, this complexity is abstracted away completely — Warp delivers a smooth, predictable experience with a single interface.
+As Warp Bridge evolves, transactions — including Pay With Warp payments — are planned to flow through Warp's privacy layer, designed to make transfers harder to link on-chain and keep payment details confidential.
 
-This documentation provides a comprehensive overview of how Warp works, how the bridge and payment system interact, and how you can integrate Warp into your apps, stores, or smart contracts. Whether you’re building a storefront, a cross-chain application, or an automated workflow, Warp gives you powerful tools to handle multi-chain logic cleanly and reliably.
+Under the hood, Warp Bridge uses a solver-based architecture to find efficient settlement routes, competitive pricing, and efficient use of liquidity. For developers and end users, this complexity is abstracted away behind a single interface.
 
-<Card title="Cross-Chain Simplicity">
-  Warp removes the friction of multi-chain crypto usage. Users can pay or transfer using any supported token and blockchain, while Warp handles the conversion and routing automatically. Developers only integrate once — Warp manages the rest.
+To start accepting payments, follow the [Quickstart](/quickstart) and see the [Integration Examples](/warp-pay/examples).
+
+<Card title="Cross-Chain Simplicity" icon="link" href="/quickstart">
+  Customers pay with a supported token on a supported chain, and Warp handles pricing and verification. Developers integrate once — Warp manages the rest.
 </Card>
 
-<Card title="Instant, Trustless Settlement">
-  Warp uses zero-knowledge proofs to confirm payments instantly, allowing merchants to deliver digital goods immediately without waiting for slow finality. Settlement happens trustlessly, and confirmations are cryptographically guaranteed.
+<Card title="Fast, Trust-Minimized Settlement" icon="bolt" href="/warp-bridge/protocol">
+  Payments are verified on-chain before a session is marked complete. Zero-knowledge payment confirmation is on the roadmap and is designed to let merchants deliver digital goods without waiting for slow finality.
 </Card>
 
-<Card title="Built-In Privacy Layer">
-  As Warp evolves, all transactions — including payments — will be routed through a private, shielded layer. Transfers become invisible to observers, unlinkable, and untraceable, ensuring confidentiality for both users and businesses.
+<Card title="Privacy Layer (Roadmap)" icon="user-shield" href="/products#pay-with-warp">
+  As Warp evolves, payments are planned to be routed through a privacy-preserving layer, designed to make transfers harder to link on-chain and keep details confidential for both users and businesses.
 </Card>
 
-<Card title="Developer-First Architecture">
-  Warp offers clean APIs and powerful smart contract primitives designed for easy integration. Whether you need a checkout button, automated asset routing, or custom cross-chain workflows, Warp provides the tools to build quickly and securely.
+<Card title="Developer-First Architecture" icon="code" href="/api-reference/checkout-api/create-payment-session">
+  Warp offers a clean REST API designed for straightforward integration. Create a hosted checkout session in a single request and poll its status from your backend.
 </Card>

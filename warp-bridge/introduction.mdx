@@ -1,66 +1,66 @@
 ---
 title: "Get Started"
-description: "Warp Bridge is a no-KYC cross-chain bridge for instant transfers, low-slippage routing, and private multi-chain transactions."
+description: "Warp Bridge is a no-KYC cross-chain transfer protocol designed for fast transfers, competitive pricing, and progressively stronger privacy."
 ---
 
-![Warpbridge(1)](/images/warpbridge\(1\).jpg)
+![Warp Bridge](/images/warpbridge\(1\).jpg)
 
-## **Warp Bridge**
+## Warp Bridge
 
-**Move Crypto Across Chains Instantly — Without KYC, Complexity, or Locked Liquidity**
+**Move Crypto Across Chains — Without KYC, Complexity, or Pooled Liquidity**
 
-Warp Bridge is building a next-generation cross-chain transfer protocol designed for speed, simplicity, and progressive privacy.Instead of depending on huge, idle liquidity pools that traditional bridges rely on, Warp Bridge is engineered around flexible settlement mechanics — including mint-and-burn or an AMM-powered model — whichever delivers the best security, efficiency, and scalability at launch.
+Warp Bridge is a cross-chain transfer protocol designed for speed, simplicity, and progressive privacy. Instead of depending on the large, idle liquidity pools that traditional bridges rely on, Warp Bridge uses a **lock-and-fulfill** model: the user's tokens are locked in a contract on the source chain, a permissionless solver delivers the destination tokens to the recipient from its own liquidity, and the locked funds are released to the solver once the fulfillment has been verified. See [Protocol](/warp-bridge/protocol) for the full design.
+
+<Note>
+  Warp Bridge is under active development. The Bridge API, widget, and contract integrations are **Coming Soon**, and features marked **Planned** or **Roadmap** are not yet available.
+</Note>
 
 <Tip>
-  Our mission is to make cross-chain movement as easy as a swap, while gradually rolling out deeper privacy layers that make transfers harder to trace as network activity grows_._
+  Our mission is to make cross-chain movement as easy as a swap, while gradually rolling out privacy layers designed to make transfers harder to link as network activity grows.
 </Tip>
 
 ## The Cross-Chain Experience
 
-Warp Bridge upgrades the outdated “lock-and-wait” bridging model into a modern, optimized experience designed for both everyday users and developers.
+Warp Bridge replaces the traditional "lock-and-wait" bridging model with a solver-driven flow designed for both everyday users and developers.
 
 ## Advantages
 
-- Fast Settlement | _Transfers finalize quickly — no long confirmation windows._
-- Seamless, No-KYC UX | Just connect, swap, and go. No accounts. No sign-ups.
-- Low Slippage & Fair Pricing | _Routing logic is designed to deliver optimized rates and minimize volatility impact._
-- Scales With Demand | _The architecture is built to grow with network activity, not slow down because of it._
-- Native Token Transfers | _Avoid unnecessary wrapped or custodial assets wherever possible._
-- Reduced Risk Exposure | _Depending on the final architecture, Warp avoids the risks of large locked TVL that plague traditional bridges._
-- Privacy that Gets Stronger Over Time |  _As more users transact, transfers naturally blend, making them harder to trace._
-- Order + Call Execution (Planned)  _Let your transfer trigger actions automatically on the destination chain — e.g., deposit into a vault, stake, execute a trade, or interact with a contract._
+- **Fast Settlement** — Solvers deliver destination funds from their own liquidity, so users are not left waiting on long cross-chain confirmation windows.
+- **Seamless, No-KYC UX** — Just connect, swap, and go. No accounts. No sign-ups.
+- **Low Slippage and Fair Pricing** — Solvers compete to fill orders, which is designed to deliver competitive rates and minimize volatility impact.
+- **Scales With Demand** — The architecture is designed to grow with network activity as more solvers participate.
+- **Native Token Transfers** — Avoid unnecessary wrapped or custodial assets wherever possible.
+- **Reduced Risk Exposure** — Funds are locked per order rather than pooled, avoiding the large shared TVL that makes traditional bridges attractive targets.
+- **Privacy that Gets Stronger Over Time** _(Roadmap)_ — As more users transact, transfers are designed to blend together, making them harder to link.
+- **Order + Call Execution** _(Planned)_ — Let a transfer trigger actions automatically on the destination chain — e.g., deposit into a vault, stake, execute a trade, or interact with a contract.
 
-<Tip>
-  We aim to provide the fastest, simplest, and most progressively private cross-chain experience on the market.
-</Tip>
+Warp Bridge aims to provide a fast, simple, and progressively private cross-chain experience.
 
-## **For Developers**
+## For Developers
 
-Warp provides a lightweight, developer-friendly API built to remove the complexity of cross-chain interactions.
+Warp Bridge is designed to offer a lightweight, developer-friendly API _(Coming Soon)_ that removes the complexity of cross-chain interactions. It is planned to let you:
 
-- Request **_cross-chain quotes in seconds_**
-- Execute transfers with **_minimal latency_**
-- _Track every step of a transfer’s lifecycle_
-- ****_Integrate privacy-enhanced routing as new layers roll out_****
-- _Build cross-chain apps without touching low-level RPCs or complex contract calls_
+- Request cross-chain quotes in seconds
+- Execute transfers with minimal latency
+- Track every step of a transfer's lifecycle
+- Integrate privacy-enhanced routing as new layers roll out _(Roadmap)_
+- Build cross-chain apps without touching low-level RPCs or complex contract calls
 
-_Warp handles the infrastructure & heavy lifting. You focus on your product._
+Warp Bridge handles the infrastructure. You focus on your product.
 
-## Next steps:
+## Next Steps
 
 <Columns cols={2}>
-  <Card title="Explore the Protocol Overview">
-    Learn how routing, settlement, and privacy layers work together.
+  <Card title="Explore the Protocol Overview" icon="microscope" href="/warp-bridge/protocol">
+    Learn how the protocol layer, solver layer, and settlement work together.
   </Card>
-  <Card title="Start building with Warp's API">
-    Begin testing quotes, transfers, and automation.
+  <Card title="Start Building with Warp's API" icon="code" href="/quickstart">
+    Accept payments today with the Checkout API while the Bridge API is in development.
   </Card>
-  <Card title="Intergrate our Widget">
-    A ready-made interface for applications that want instant cross-chain functionality.
+  <Card title="Integrate the Widget (Coming Soon)" icon="window" href="/quickstart#embedded-widget-coming-soon">
+    A ready-made interface for applications that want cross-chain functionality.
   </Card>
-  <Card title="Delve into the specifics">
-    With Use Cases discover how developers are leveraging Warp across different applications.
+  <Card title="Explore Use Cases" icon="lightbulb" href="/warp-bridge/usecases">
+    Compare the API, widget, and smart contract integration paths.
   </Card>
 </Columns>
-
----

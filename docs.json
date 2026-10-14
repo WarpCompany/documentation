@@ -1,7 +1,7 @@
 {
     "$schema": "https://mintlify.com/docs.json",
     "theme": "aspen",
-    "name": "Secure DeFi Infrastructure",
+    "name": "Warp",
     "colors": {
       "primary": "#9E1FAA",
       "light": "#9E1FAA",
@@ -46,7 +46,7 @@
               ]
             },
             {
-              "group": "Warp Pay",
+              "group": "Pay With Warp",
               "pages": [
                 "warp-pay/index",
                 "warp-pay/examples"
@@ -61,13 +61,13 @@
               ]
             },
             {
-              "group": "ZK-Proofs",
+              "group": "ZK Proofs as a Service",
               "pages": [
                 "zkproofs/introduction"
               ]
             },
             {
-              "group": "Validators",
+              "group": "ZK Validator Network",
               "pages": [
                 "zkvalidator/introduction"
               ]

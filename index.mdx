@@ -6,68 +6,78 @@ mode: "wide"
 
 <video autoPlay muted loop playsInline className="w-full h-auto rounded-xl" src="/videos/demo.mp4" />
 
-## **Unified Cross-Chain Infrastructure for DeFi**
+## Unified Cross-Chain Infrastructure for DeFi
 
-Warp is building the infrastructure layer that makes multi-chain crypto feel like a single, seamless network. Our mission is to eliminate the fragmentation, complexity, and privacy gaps that plague today's blockchain ecosystems.
+Warp is building the infrastructure layer that makes multi-chain crypto feel like a single, seamless network. Our mission is to reduce the fragmentation, complexity, and privacy gaps that affect today's blockchain ecosystems.
 
-Instead of forcing users to navigate dozens of chains, swap between incompatible tokens, or sacrifice privacy for convenience, Warp provides a unified experience powered by cutting-edge zero-knowledge technology, solver-based liquidity networks, and instant settlement mechanisms.
+Instead of forcing users to navigate dozens of chains, swap between incompatible tokens, or sacrifice privacy for convenience, Warp aims to provide a unified experience built on solver-based liquidity networks, deterministic settlement contracts, and zero-knowledge technology.
 
-Whether you're a developer building cross-chain applications, a merchant accepting crypto payments, or a user transferring assets between networks, Warp delivers speed, simplicity, and progressive privacy at every layer.
+Whether you're a developer building cross-chain applications, a merchant accepting crypto payments, or a user transferring assets between networks, Warp is designed to deliver speed, simplicity, and progressively stronger privacy at every layer.
+
+<Note>
+  Warp is under active development. Features marked **Coming Soon**, **Planned**, or **Roadmap** are not yet available, and their descriptions reflect design goals rather than current behavior.
+</Note>
 
 ---
 
-## **_Core Ecosystem_**
+## Core Ecosystem
 
-Warp's ecosystem is built on four interconnected pillars, each designed to solve critical pain points in modern DeFi:
+Warp's ecosystem is built on four interconnected components. Each is designed to work independently, and to work even better when combined:
 
 <CardGroup cols={2}>
   <Card title="Warp Bridge" icon="bridge" href="/warp-bridge/introduction">
-    Fast, no-KYC cross-chain transfers powered by solver networks and deterministic settlement contracts. Move assets between chains instantly without wrapped tokens or custodial risk.
+    Fast, no-KYC cross-chain transfers powered by solver networks and deterministic settlement contracts. Designed to move assets between chains without wrapped tokens or custodial bridges.
   </Card>
   <Card title="Pay With Warp" icon="credit-card" href="/warp-pay/index">
-    Universal crypto checkout that accepts any token on any chain. Merchants receive exactly what they want while customers pay with what they have — conversion happens automatically.
+    Universal crypto checkout that accepts any supported token on any supported chain. Merchants receive the asset they choose while customers pay with what they have.
   </Card>
-  <Card title="ZK-Proof Builder" icon="shield-check" href="/products">
-    Deploy privacy-preserving smart contracts without writing Solidity. Generate and verify zero-knowledge proofs with simple API calls.
+  <Card title="ZK Proofs as a Service (Beta)" icon="shield-check" href="/zkproofs/introduction">
+    Write, compile, and deploy zero-knowledge-powered smart contracts without writing Solidity or building circuits by hand.
   </Card>
-  <Card title="Validator Network" icon="network-wired" href="/products">
-    Decentralized proof verification infrastructure that powers instant settlement, privacy layers, and trustless computation across Warp's ecosystem.
+  <Card title="ZK Validator Network (Coming Soon)" icon="network-wired" href="/zkvalidator/introduction">
+    A planned decentralized proof verification layer designed to support fast settlement, privacy routing, and verifiable computation across Warp's ecosystem.
   </Card>
 </CardGroup>
 
 ---
 
-## **_Why Warp?_**
+## Why Warp?
 
-### **Universal Access**
+### Universal Access
 
-One integration unlocks support for dozens of blockchains. Users and developers never need to worry about chain selection, token compatibility, or manual bridging again.
+One integration is designed to unlock support for many blockchains. Users and developers should not need to worry about chain selection, token compatibility, or manual bridging.
 
-### **Instant Settlement**
+### Fast Settlement
 
-Warp leverages zero-knowledge proofs to confirm transactions instantly, enabling real-time experiences without waiting for block finality or slow cross-chain messaging.
+Solvers fulfill transfers from their own liquidity on the destination chain, so users are not left waiting on slow cross-chain messaging. On the roadmap, zero-knowledge proofs are intended to enable near-real-time payment confirmation.
 
-### **Privacy by Default**
+### Privacy by Design _(Roadmap)_
 
-As Warp evolves, all transfers, payments, and proofs will flow through privacy-preserving routing layers — making transactions unlinkable, untraceable, and confidential.
+As Warp evolves, transfers, payments, and proofs are planned to flow through privacy-preserving routing layers, designed to make transactions harder to link on-chain and keep their details confidential.
 
-### **Built for Developers**
+### Built for Developers
 
-Clean APIs, smart contract primitives, and comprehensive SDKs designed to abstract complexity while preserving flexibility and control.
+Clean REST APIs and smart contract primitives designed to abstract complexity while preserving flexibility and control.
 
 ---
 
-## **_Get Started_**
+## Our Vision
+
+A private, interoperable, cross-chain layer that feels as seamless as using a single blockchain, without users ever needing to notice the complexity underneath. Use Warp's components individually, or combine them to build secure cross-chain experiences.
+
+---
+
+## Get Started
 
 <CardGroup cols={2}>
   <Card title="Quickstart Guide" icon="rocket" href="/quickstart">
-    Get up and running with Warp in minutes. Learn how to integrate cross-chain transfers, payments, and proofs into your application.
+    Get up and running with Warp. Learn how to accept your first cross-chain payment.
   </Card>
   <Card title="Explore Warp Bridge" icon="bridge-water" href="/warp-bridge/introduction">
     Dive into the architecture, protocol design, and integration methods for Warp's cross-chain transfer system.
   </Card>
-  <Card title="API Reference" icon="code" href="/api-reference/introduction">
-    Complete API documentation for quotes, transfers, payment creation, proof generation, and status tracking.
+  <Card title="API Reference" icon="code" href="/api-reference/checkout-api/create-payment-session">
+    API documentation for payment sessions, organizations, and ZK proofs.
   </Card>
   <Card title="Product Overview" icon="cubes" href="/products">
     Learn more about each component of the Warp ecosystem and how they work together.
@@ -76,27 +86,27 @@ Clean APIs, smart contract primitives, and comprehensive SDKs designed to abstra
 
 ---
 
-## **_Developer Resources_**
+## Developer Resources
 
 Everything you need to build with Warp:
 
 <CardGroup cols={2}>
   <Card title="Integration Examples" icon="code-branch" href="/warp-pay/examples">
-    Real-world code samples showing how to integrate Warp into wallets, dApps, storefronts, and automated workflows.
+    Illustrative code samples showing how to integrate Pay With Warp into storefronts and backends.
   </Card>
   <Card title="Protocol Deep Dive" icon="microscope" href="/warp-bridge/protocol">
-    Understand Warp's technical architecture, security model, and settlement mechanisms.
+    Understand Warp Bridge's technical architecture, security model, and settlement mechanisms.
   </Card>
   <Card title="Use Cases" icon="lightbulb" href="/warp-bridge/usecases">
-    Explore how different projects leverage Warp for payments, liquidity routing, and cross-chain automation.
+    Explore the integration paths planned for payments, liquidity routing, and cross-chain automation.
   </Card>
-  <Card title="Development Setup" icon="laptop-code" href="/development">
-    Set up your local environment and start testing Warp integrations.
+  <Card title="Warp Platform" icon="laptop-code" href="https://platform.usewarp.net">
+    Create an account, generate API keys, and manage your projects.
   </Card>
 </CardGroup>
 
 ---
 
-<Card title="Join the Warp Ecosystem" icon="users" horizontal>
-  Warp is building the foundational layer for a truly interoperable, private, and accessible crypto future. Whether you're building the next DeFi protocol, accepting payments, or creating novel ZK applications — Warp provides the infrastructure to make it happen.
+<Card title="Join the Warp Ecosystem" icon="users" horizontal href="https://discord.gg/warp">
+  Warp is building toward a truly interoperable, private, and accessible crypto future. Whether you're building a DeFi protocol, accepting payments, or exploring ZK applications, join our community to follow development and share feedback.
 </Card>

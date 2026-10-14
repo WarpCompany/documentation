@@ -1,34 +1,38 @@
 ---
 title: "Quickstart"
-description: "This guide will walk you through your first Warp integration — from API setup to executing your first cross-chain transfer or payment."
+description: "This guide walks you through your first Warp integration — from project setup to accepting your first cross-chain payment."
 ---
 
 ## Getting Started
 
-Whether you're building a wallet, dApp, payment system, or automated trading bot, Warp provides simple APIs and SDKs that abstract the complexity of multi-chain operations.
+Whether you're building a storefront, a SaaS product, or a dApp, Pay With Warp provides a simple REST API for accepting crypto payments. This guide uses the [Checkout API](/api-reference/checkout-api/create-payment-session) to create a payment session, send the customer to Warp's hosted checkout, and track the result.
+
+<Note>
+  Warp is under active development. Features marked **Coming Soon** are not yet available. Official SDKs are coming soon — until then, call the REST API directly with any HTTP client.
+</Note>
 
 ---
 
-## **Before You Begin**
+## Before You Begin
 
 <AccordionGroup>
-  <Accordion title="Get API Access" icon="key">
-    To use Warp's APIs, you'll need an API key:
+  <Accordion title="Create a project and get your public key" icon="key">
+    To accept payments, you'll need a project on the Warp Platform:
 
     1. Visit the [Warp Platform](https://platform.usewarp.net)
     2. Create an account or sign in
-    3. Navigate to **API Keys** and generate a new key
-    4. Store your key securely — you'll use it in all API requests
+    3. Create an organization and a project, and configure where you want to receive funds
+    4. Copy the project's **public key** (it starts with `pk_`) — you'll use it to create payment sessions
 
     <Warning>
-      Never expose your API key in client-side code or public repositories.
+      Never expose account credentials or session tokens in client-side code or public repositories. Create payment sessions from your backend so that customers cannot change the amount.
     </Warning>
   </Accordion>
   <Accordion title="Set up a test wallet" icon="wallet">
-    For testing cross-chain transfers and payments:
+    For testing payments:
 
     1. Use a testnet-compatible wallet (MetaMask, WalletConnect, etc.)
-    2. Add testnet networks (Sepolia, Goerli, Mumbai, etc.)
+    2. Add testnet networks (e.g., Ethereum Sepolia, Arbitrum Sepolia, Base Sepolia, Polygon Amoy)
     3. Fund your wallet with testnet tokens from public faucets
 
     <Tip>
@@ -39,47 +43,46 @@ Whether you're building a wallet, dApp, payment system, or automated trading bot
 
 ---
 
-## **Integration Path**
+## Integration Path
 
 Choose the integration method that best fits your use case:
 
 <CardGroup cols={3}>
-  <Card title="API" icon="code">
+  <Card title="REST API" icon="code" href="#quick-integration-rest-api">
     Backend integrations, custom UIs, mobile apps
 
-    Full control over the user experience with simple HTTP requests.
+    Create payment sessions and track their status with simple HTTP requests.
   </Card>
-  <Card title="JavaScript SDK" icon="js">
-    Web applications, React apps, frontend integrations
+  <Card title="JavaScript (fetch)" icon="js" href="#quick-integration-javascript">
+    Node.js backends and serverless functions
 
-    Pre-built functions with TypeScript support and automatic retry logic.
+    The same REST flow using the built-in `fetch` API.
   </Card>
-  <Card title="Embedded Widget" icon="window">
+  <Card title="Embedded Widget (Coming Soon)" icon="window" href="#embedded-widget-coming-soon">
     Fastest deployment, minimal code changes
 
-    Drop-in UI component with full cross-chain transfer and payment functionality.
+    A drop-in UI component for cross-chain transfers and payments.
   </Card>
 </CardGroup>
 
 ---
 
-## **Quick Integration: REST API**
+## Quick Integration: REST API
 
-### **Step 1: Get a Cross-Chain Quote**
+### Step 1: Create a Payment Session
 
-Request a quote for transferring tokens between chains:
+From your backend, create a payment session for the order amount in USD:
 
 ```bash
-curl -X POST https://api.usewarp.net/v1/quote \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl -X POST https://checkout.usewarp.net/sessions \
   -H "Content-Type: application/json" \
   -d '{
-    "sourceChain": "ethereum",
-    "destinationChain": "arbitrum",
-    "sourceToken": "USDC",
-    "destinationToken": "USDC",
-    "amount": "100000000",
-    "recipient": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+    "public_key": "pk_YOUR_PROJECT_PUBLIC_KEY",
+    "amount_usd": 49.99,
+    "description": "Order #1234",
+    "metadata": { "orderId": "1234" },
+    "return_url": "https://yourstore.com/orders/1234/success",
+    "cancel_url": "https://yourstore.com/orders/1234/cancel"
   }'
 ```
 
@@ -87,165 +90,111 @@ curl -X POST https://api.usewarp.net/v1/quote \
 
 ```json
 {
-  "quoteId": "quote_1a2b3c4d5e6f",
-  "sourceAmount": "100000000",
-  "destinationAmount": "99750000",
-  "estimatedFee": "250000",
-  "estimatedTime": "45",
-  "expiresAt": "2025-12-13T10:15:00Z"
+  "session_id": "sess_1a2b3c4d5e6f",
+  "checkout_url": "https://checkout.usewarp.net/sess_1a2b3c4d5e6f",
+  "expires_at": "2026-01-15T10:15:00Z"
 }
 ```
 
-### **Step 2: Execute the Transfer**
+### Step 2: Redirect the Customer to Checkout
 
-Once you have a quote, execute the transfer:
+Send the customer to the returned `checkout_url`. The hosted checkout handles wallet connection, token and chain selection, pricing, and transaction submission. When the payment finishes, the customer is sent back to your `return_url` (or to `cancel_url` if they cancel).
+
+### Step 3: Track Payment Status
+
+Poll the session status from your backend:
 
 ```bash
-curl -X POST https://api.usewarp.net/v1/transfer \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "quoteId": "quote_1a2b3c4d5e6f",
-    "userAddress": "0x1234567890abcdef1234567890abcdef12345678"
-  }'
+curl https://checkout.usewarp.net/status/sess_1a2b3c4d5e6f
 ```
 
 **Response:**
 
 ```json
 {
-  "transferId": "transfer_9x8y7z6w5v4u",
-  "status": "pending",
-  "sourceTransaction": {
-    "chainId": 1,
-    "hash": "0xabc123...",
-    "confirmations": 0
-  }
-}
-```
-
-### **Step 3: Track Transfer Status**
-
-Monitor your transfer in real-time:
-
-```bash
-curl https://api.usewarp.net/v1/transfer/transfer_9x8y7z6w5v4u \
-  -H "Authorization: Bearer YOUR_API_KEY"
-```
-
-**Response:**
-
-```json
-{
-  "transferId": "transfer_9x8y7z6w5v4u",
+  "session_id": "sess_1a2b3c4d5e6f",
   "status": "completed",
-  "sourceTransaction": {
-    "chainId": 1,
-    "hash": "0xabc123...",
-    "confirmations": 15
-  },
-  "destinationTransaction": {
-    "chainId": 42161,
-    "hash": "0xdef456...",
-    "confirmations": 8
-  },
-  "completedAt": "2025-12-13T10:12:34Z"
+  "verification_step": "completed",
+  "tx_hash": "0xabc123...",
+  "verified_at": "2026-01-15T10:12:30Z",
+  "completed_at": "2026-01-15T10:12:34Z"
 }
 ```
+
+`status` is one of `pending`, `processing`, `completed`, or `failed`. Only fulfill the order once `status` is `completed`, and always check the status from your backend rather than trusting the redirect alone.
 
 ---
 
-## **Quick Integration: JavaScript SDK**
+## Quick Integration: JavaScript
 
-### **Installation**
-
-```bash
-npm install @usewarp/sdk
-# or
-yarn add @usewarp/sdk
-```
-
-### **Basic Usage**
+The same flow in Node.js 18+ using the built-in `fetch` API:
 
 ```javascript
-import { WarpClient } from '@usewarp/sdk';
+const CHECKOUT_API = 'https://checkout.usewarp.net';
 
-// Initialize the client
-const warp = new WarpClient({
-  apiKey: process.env.WARP_API_KEY,
-  environment: 'testnet' // or 'mainnet'
-});
-
-// Get a quote
-const quote = await warp.getQuote({
-  sourceChain: 'ethereum',
-  destinationChain: 'arbitrum',
-  sourceToken: 'USDC',
-  destinationToken: 'USDC',
-  amount: '100000000',
-  recipient: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e'
-});
-
-// Execute transfer
-const transfer = await warp.executeTransfer({
-  quoteId: quote.quoteId,
-  userAddress: walletAddress
-});
-
-// Track status
-const status = await warp.getTransferStatus(transfer.transferId);
-console.log('Transfer status:', status.status);
-```
-
----
-
-## **Quick Integration: Embedded Widget**
-
-Add the Warp widget to your website with just a few lines of code:
-
-```html
-<!-- Add the Warp widget script -->
-<script src="https://widget.warp.dev/v1/warp-widget.js"></script>
-
-<!-- Add the widget container -->
-<div id="warp-widget"></div>
-
-<script>
-  WarpWidget.init({
-    container: '#warp-widget',
-    apiKey: 'YOUR_PUBLIC_API_KEY',
-    defaultSourceChain: 'ethereum',
-    defaultDestinationChain: 'arbitrum',
-    theme: 'dark' // or 'light'
+// 1. Create a payment session (server-side)
+async function createPaymentSession(order) {
+  const res = await fetch(`${CHECKOUT_API}/sessions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      public_key: process.env.WARP_PUBLIC_KEY, // pk_...
+      amount_usd: order.totalUsd,
+      description: `Order #${order.id}`,
+      metadata: { orderId: order.id },
+      return_url: `https://yourstore.com/orders/${order.id}/success`,
+      cancel_url: `https://yourstore.com/orders/${order.id}/cancel`
+    })
   });
-</script>
-```
+  if (!res.ok) {
+    throw new Error(`Failed to create session: HTTP ${res.status}`);
+  }
+  return res.json(); // { session_id, checkout_url, expires_at }
+}
 
-<Tip>
-  The widget handles wallet connection, quote fetching, and transfer execution automatically.
-</Tip>
+// 2. Check the session status
+async function getSessionStatus(sessionId) {
+  const res = await fetch(`${CHECKOUT_API}/status/${encodeURIComponent(sessionId)}`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch status: HTTP ${res.status}`);
+  }
+  return res.json(); // { session_id, status, verification_step, tx_hash, ... }
+}
+
+const session = await createPaymentSession({ id: '1234', totalUsd: 49.99 });
+console.log('Redirect the customer to:', session.checkout_url);
+
+const status = await getSessionStatus(session.session_id);
+console.log('Payment status:', status.status);
+```
 
 ---
 
-## **Next Steps**
+## Embedded Widget (Coming Soon)
+
+A drop-in widget for cross-chain transfers and payments is in development. It is designed to handle wallet connection, quote fetching, and execution automatically, so you can add Warp to a page with a few lines of code. Join our [Discord](https://discord.gg/warp) for updates.
+
+---
+
+## Next Steps
 
 <CardGroup cols={2}>
   <Card title="Explore Warp Bridge" icon="bridge" href="/warp-bridge/introduction">
-    Learn about cross-chain transfer architecture, settlement mechanisms, and privacy features.
+    Learn about cross-chain transfer architecture, settlement mechanisms, and the privacy roadmap.
   </Card>
   <Card title="Payment Integration" icon="credit-card" href="/warp-pay/index">
-    Add universal crypto checkout to accept payments in any token on any chain.
+    Learn how Pay With Warp lets customers pay with supported tokens on supported chains.
   </Card>
-  <Card title="API Reference" icon="book" href="/api-reference/introduction">
-    Complete API documentation with all endpoints, parameters, and response schemas.
+  <Card title="API Reference" icon="book" href="/api-reference/checkout-api/create-payment-session">
+    API documentation with endpoints, parameters, and response schemas.
   </Card>
   <Card title="Integration Examples" icon="code-branch" href="/warp-pay/examples">
-    View real-world code samples for wallets, dApps, and payment systems.
+    View illustrative code samples for storefronts and backends.
   </Card>
 </CardGroup>
 
 ---
 
-<Card title="Need Help?" icon="question-circle" horizontal>
-  Join our [Discord community](https://discord.gg/warp) or contact [support@usewarp.net](mailto:support@usewarp.net) for integration assistance.
+<Card title="Need Help?" icon="question-circle" horizontal href="https://discord.gg/warp">
+  Join our Discord community for integration assistance, or email support@usewarp.net.
 </Card>

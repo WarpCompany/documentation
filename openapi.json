@@ -610,78 +610,6 @@
         }
       }
     },
-    "/api/user/limits": {
-      "get": {
-        "summary": "Get user limits",
-        "description": "Retrieve the current user's usage limits",
-        "tags": ["User"],
-        "security": [{"bearerAuth": []}],
-        "responses": {
-          "200": {
-            "description": "User limits retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "limits": {
-                      "type": "object",
-                      "description": "User limits object"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/user/project-limits": {
-      "get": {
-        "summary": "Get user project limits",
-        "description": "Retrieve the current user's project-specific limits",
-        "tags": ["User"],
-        "security": [{"bearerAuth": []}],
-        "responses": {
-          "200": {
-            "description": "Project limits retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "limits": {
-                      "type": "object",
-                      "description": "Project limits object"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/organizations": {
       "get": {
         "summary": "List organizations",
@@ -2410,6 +2338,12 @@
       }
     },
     "/pricing": {
+      "servers": [
+        {
+          "url": "https://checkout.usewarp.net",
+          "description": "Checkout API"
+        }
+      ],
       "get": {
         "summary": "Get pricing information",
         "description": "Get real-time pricing with 1-minute lock for payment verification",
@@ -2489,6 +2423,12 @@
       }
     },
     "/sessions": {
+      "servers": [
+        {
+          "url": "https://checkout.usewarp.net",
+          "description": "Checkout API"
+        }
+      ],
       "post": {
         "summary": "Create payment session",
         "description": "Create a new payment session for checkout",
@@ -2592,6 +2532,12 @@
       }
     },
     "/status/{sessionId}": {
+      "servers": [
+        {
+          "url": "https://checkout.usewarp.net",
+          "description": "Checkout API"
+        }
+      ],
       "get": {
         "summary": "Get session status",
         "description": "Get the current status of a payment session for frontend polling",
@@ -2632,6 +2578,12 @@
       }
     },
     "/submit-transaction": {
+      "servers": [
+        {
+          "url": "https://checkout.usewarp.net",
+          "description": "Checkout API"
+        }
+      ],
       "post": {
         "summary": "Submit transaction",
         "description": "Submit a blockchain transaction hash for payment verification",
