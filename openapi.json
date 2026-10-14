@@ -329,7 +329,7 @@
         ],
         "operationId": "createZkNonce",
         "summary": "Create a verification nonce",
-        "description": "Issues a single-use nonce that expires after 10 minutes. Pass it to the verify endpoint to prevent replay of a verification request.",
+        "description": "Issues a single-use nonce that expires after 10 minutes. The nonce is a random integer below 2^248, returned as a decimal string so it fits in a BN254 field element and can be used directly as a circuit input. To make a proof replay-proof, add the nonce as a public input of your circuit, declare it in the proof policies with `{ \"signal_index\": <i>, \"kind\": \"nonce\" }`, and pass the same nonce to the verify endpoint.",
         "x-mint": {
           "href": "/api-reference/zk-verification/create-nonce"
         },
@@ -423,7 +423,7 @@
         ],
         "operationId": "verifyZkProof",
         "summary": "Verify a proof",
-        "description": "Verifies a Groth16 proof off-chain against the proof's stored verification key. With `onchain: true`, also calls `verifyProof` on the proof's deployed verifier contract (allow-listed chains only). Returns a signed receipt (compact JWS, EdDSA) that you can verify with the keys from the JWKS endpoint. Only the owning project's secret key can verify its proofs.",
+        "description": "Verifies a Groth16 proof off-chain against the proof's stored verification key. With `onchain: true`, also calls `verifyProof` on the proof's deployed verifier contract (allow-listed chains only). Enforces the proof's policies: value rules, a nonce signal (`kind: \"nonce\"`) that must equal the supplied nonce, and a nullifier signal (`kind: \"nullifier\"`) that can only be accepted once per proof. A malformed policy fails closed (`policy: \"invalid_policy\"`, `valid: false`). Returns a signed receipt (compact JWS, EdDSA) that you can verify with the keys from the JWKS endpoint. Only the owning project's secret key can verify its proofs.",
         "x-mint": {
           "href": "/api-reference/zk-verification/verify-proof"
         },
@@ -689,7 +689,7 @@
         ],
         "operationId": "getAttestation",
         "summary": "Check an attestation",
-        "description": "Public check of a Warp Verify attestation. No authentication required; rate limited per IP. `valid` is `true` only when a real proof was recorded for the attestation.",
+        "description": "Public check of a Warp Verify attestation. No authentication required; rate limited per IP. `valid` is `true` only for an active attestation that is not expired or revoked and was registered on-chain (proof hash, verifier contract, registry contract and on-chain attestation ID all recorded).",
         "x-mint": {
           "href": "/api-reference/attestations/check"
         },
@@ -1018,7 +1018,15 @@
         "type": "object",
         "properties": {
           "nonce": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^[0-9]{1,75}$",
+            "description": "Decimal integer below 2^248. Use this exact value as the circuit nonce input and in the verify request.",
+            "example": "1766847064778384329583297500742918515827483896875618958121606201292619776"
+          },
+          "nonce_hex": {
+            "type": "string",
+            "description": "The same nonce as 0x-prefixed hex (62 hex digits), for display only.",
+            "example": "0x0100000000000000000000000000000000000000000000000000000000000000"
           },
           "expires_at": {
             "type": "string",
@@ -1090,7 +1098,8 @@
           },
           "nonce": {
             "type": "string",
-            "description": "Optional nonce from the create-nonce endpoint."
+            "pattern": "^[0-9]{1,78}$",
+            "description": "Decimal nonce from the create-nonce endpoint. Required when the proof declares a nonce signal; it must equal that public signal. Otherwise optional: it is consumed but reported as `unbound`, because the proof itself does not commit to it."
           },
           "onchain": {
             "type": "boolean",
@@ -1134,16 +1143,29 @@
                   "ok",
                   "missing",
                   "used",
-                  "expired"
-                ]
+                  "expired",
+                  "mismatch",
+                  "unbound"
+                ],
+                "description": "`ok`: the nonce is the proof's nonce signal and was consumed. `unbound`: consumed, but the circuit has no nonce signal (replay protection is advisory only). `mismatch`: the nonce does not equal the nonce signal. `missing`: unknown nonce, or none supplied when the circuit requires one. Omitted when no nonce was supplied and none is required. Anything other than `ok` or `unbound` makes `valid` false."
               },
               "policy": {
                 "type": "string",
                 "enum": [
                   "ok",
                   "mismatch",
-                  "n/a"
-                ]
+                  "n/a",
+                  "invalid_policy"
+                ],
+                "description": "`n/a` when the proof has no value rules. `invalid_policy` when a stored policy entry is malformed; the result is then never valid."
+              },
+              "nullifier": {
+                "type": "string",
+                "enum": [
+                  "ok",
+                  "reused"
+                ],
+                "description": "Present when the proof declares a nullifier signal and every other check passed. `reused` means the nullifier was already accepted for this proof, and `valid` is false."
               }
             }
           },
@@ -1153,7 +1175,7 @@
           },
           "receipt": {
             "type": "string",
-            "description": "Compact JWS (EdDSA, Ed25519) over `{ proof_id, public_signals, valid, verified_at, chain_id? }`. Verify it with the JWKS endpoint."
+            "description": "Compact JWS (EdDSA, Ed25519, `typ: warp-verify-receipt+jws`) over a `ZkReceiptClaims` payload. Verify the signature with the JWKS endpoint, then check `aud`, `exp`, `nonce` and `nonce_bound`, and remember `jti` if you need single-use receipts."
           }
         }
       },
@@ -1252,7 +1274,7 @@
           },
           "valid": {
             "type": "boolean",
-            "description": "`true` only when a real proof was recorded and the attestation is current."
+            "description": "`true` only when the attestation is active, not expired or revoked, and registered on-chain with a verified proof (proof hash, verifier contract, registry contract and on-chain ID recorded)."
           },
           "expires_at": {
             "type": "string",
@@ -1264,6 +1286,87 @@
           },
           "registry_address": {
             "type": "string"
+          }
+        }
+      },
+      "ZkReceiptClaims": {
+        "type": "object",
+        "description": "Payload of the verification receipt.",
+        "required": [
+          "proof_id",
+          "project_id",
+          "aud",
+          "public_signals",
+          "valid",
+          "nonce_bound",
+          "policy",
+          "vkey_hash",
+          "verified_at",
+          "iat",
+          "exp",
+          "jti"
+        ],
+        "properties": {
+          "proof_id": {
+            "type": "string"
+          },
+          "project_id": {
+            "type": "string",
+            "description": "Project that requested the verification."
+          },
+          "aud": {
+            "type": "string",
+            "description": "Audience: the project ID. Reject receipts issued to another project."
+          },
+          "public_signals": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "valid": {
+            "type": "boolean"
+          },
+          "nonce": {
+            "type": "string",
+            "description": "The accepted nonce (`checks.nonce` was `ok` or `unbound`)."
+          },
+          "nonce_bound": {
+            "type": "boolean",
+            "description": "`true` only when the nonce is a public signal of the proof. If `false`, the receipt does not prove freshness."
+          },
+          "policy": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "mismatch",
+              "n/a",
+              "invalid_policy"
+            ]
+          },
+          "vkey_hash": {
+            "type": "string",
+            "description": "Lowercase hex SHA-256 of the verification key JSON with keys sorted recursively."
+          },
+          "verified_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "chain_id": {
+            "type": "integer",
+            "description": "Present when the proof was also verified on-chain."
+          },
+          "iat": {
+            "type": "integer",
+            "description": "Issued at (unix seconds)."
+          },
+          "exp": {
+            "type": "integer",
+            "description": "Expiry (unix seconds), 10 minutes after `iat`."
+          },
+          "jti": {
+            "type": "string",
+            "description": "Unique receipt ID (UUID)."
           }
         }
       }

@@ -58,23 +58,43 @@ A circuit defines the rules a statement must satisfy. A prover with private inpu
 
 Hosted verification checks the proof off-chain against the proof's stored verification key, optionally calls your deployed verifier too, and returns a signed **receipt** you can store or forward as evidence. Only your project's secret key can verify your project's proofs, so call it from your server.
 
-To stop a captured request from being replayed, fetch a single-use nonce first. Nonces expire after 10 minutes.
+### Bind a nonce to the proof
+
+A nonce only stops replay if the proof itself commits to it. Add a public `nonce` input to your circuit, constrain it (for example `nonceSquared <== nonce * nonce;`), and declare it in the proof's policies in the Warp Platform:
+
+```json
+[
+  { "signal_index": 1, "kind": "nonce" },
+  { "signal_index": 0, "kind": "nullifier" }
+]
+```
+
+- `kind: "nonce"`: `public_signals[signal_index]` must equal the nonce sent to verify. The nonce is then required.
+- `kind: "nullifier"` (optional): the signal is recorded per proof; a second valid proof with the same nullifier is rejected (`checks.nullifier: "reused"`).
+- `{ "signal_index", "operator", "value" }`: compares the signal with a fixed value (`equals`, `not_equals`, `greater_than`, `less_than`).
+
+A malformed policy entry fails closed: `checks.policy` is `invalid_policy` and `valid` is `false`.
+
+The flow is: fetch a nonce, generate the proof with that nonce as the circuit input, then verify. Nonces are single use and expire after 10 minutes. `nonce` is a decimal string below 2^248, so it fits in a field element as-is; `nonce_hex` is the same value in hex for display.
 
 <CodeGroup>
 
 ```bash cURL
-# 1. Get a nonce
+# 1. Get a nonce, then generate the proof with it as the `nonce` input
 curl -X POST https://api.usewarp.net/v1/zk/proofs/$PROOF_ID/nonces \
   -H "Authorization: Bearer $WARP_SECRET_KEY"
+# { "nonce": "1766847064...", "nonce_hex": "0x01...", "expires_at": "..." }
 
 # 2. Verify
 curl https://api.usewarp.net/v1/zk/proofs/$PROOF_ID/verify \
   -H "Authorization: Bearer $WARP_SECRET_KEY" \
   -H "Content-Type: application/json" \
-  -d '{ "proof": { "pi_a": ["..."], "pi_b": [["..."]], "pi_c": ["..."] }, "public_signals": ["1"], "nonce": "<nonce>", "onchain": true }'
+  -d '{ "proof": { "pi_a": ["..."], "pi_b": [["..."]], "pi_c": ["..."] }, "public_signals": ["<nullifier>", "<nonce>"], "nonce": "<nonce>", "onchain": true }'
 ```
 
 ```javascript Node.js
+import { groth16 } from 'snarkjs';
+
 const API = 'https://api.usewarp.net/v1';
 const headers = {
   Authorization: `Bearer ${process.env.WARP_SECRET_KEY}`,
@@ -83,6 +103,8 @@ const headers = {
 
 const { nonce } = await fetch(`${API}/zk/proofs/${proofId}/nonces`, { method: 'POST', headers })
   .then((r) => r.json());
+
+const { proof, publicSignals } = await groth16.fullProve({ ...inputs, nonce }, wasmPath, zkeyPath);
 
 const result = await fetch(`${API}/zk/proofs/${proofId}/verify`, {
   method: 'POST',
@@ -101,6 +123,7 @@ API = "https://api.usewarp.net/v1"
 headers = {"Authorization": f"Bearer {os.environ['WARP_SECRET_KEY']}"}
 
 nonce = requests.post(f"{API}/zk/proofs/{proof_id}/nonces", headers=headers, timeout=10).json()["nonce"]
+proof, public_signals = generate_proof(inputs, nonce)  # your prover, with `nonce` as the circuit input
 result = requests.post(
     f"{API}/zk/proofs/{proof_id}/verify",
     headers=headers,
@@ -124,6 +147,7 @@ The response reports each check:
     "offchain": true,
     "onchain": { "chain_id": 11155111, "contract_address": "0x...", "result": true },
     "nonce": "ok",
+    "nullifier": "ok",
     "policy": "n/a"
   },
   "verified_at": "2026-10-14T12:00:00.000Z",
@@ -133,12 +157,25 @@ The response reports each check:
 
 - `public_signals` must have exactly as many values as the circuit outputs, each a decimal string below the BN254 field modulus.
 - `onchain` runs an `eth_call` to the verifier stored for the proof, on supported chains (Ethereum, Sepolia, Base, Base Sepolia).
-- `nonce` is `ok`, `missing` (none sent), `used` or `expired`.
-- `policy` is `ok` or `mismatch` when policies are configured for the proof in the Warp Platform, otherwise `n/a`.
+- `nonce` is `ok` (bound to the proof and consumed), `mismatch` (not the proof's nonce signal), `missing` (unknown, or none sent when the circuit requires one), `used` or `expired`. If the circuit has no nonce signal, a supplied nonce is still consumed but reported as `unbound`: the proof does not commit to it, so it does not prove freshness.
+- `nullifier` is `ok` or `reused`, present when the circuit declares a nullifier signal and every other check passed.
+- `policy` is `ok` or `mismatch` when value rules are configured for the proof in the Warp Platform, `invalid_policy` when a policy entry is malformed, otherwise `n/a`.
 
 ### Verify the receipt
 
-The `receipt` is a compact JWS signed with Ed25519 (`alg: EdDSA`). Its payload is `{ proof_id, public_signals, valid, verified_at, chain_id? }`. Anyone can check it with Warp's public keys:
+The `receipt` is a compact JWS signed with Ed25519 (`alg: EdDSA`). Its payload:
+
+| Claim | Meaning |
+| --- | --- |
+| `proof_id`, `public_signals`, `valid`, `verified_at` | The verification result. |
+| `project_id`, `aud` | The project that requested the verification. Reject receipts whose `aud` is not your project. |
+| `nonce`, `nonce_bound` | The accepted nonce, and whether the proof commits to it. Only `nonce_bound: true` proves freshness. |
+| `policy` | The policy result (`ok`, `mismatch`, `n/a`, `invalid_policy`). |
+| `vkey_hash` | Hex SHA-256 of the verification key JSON (keys sorted recursively). |
+| `chain_id` | Present when the proof was also verified on-chain. |
+| `iat`, `exp`, `jti` | Issued at and expiry (unix seconds, 10 minutes apart) and a unique receipt ID. |
+
+Anyone can check it with Warp's public keys:
 
 ```javascript
 import { compactVerify, createRemoteJWKSet } from 'jose';
@@ -146,7 +183,11 @@ import { compactVerify, createRemoteJWKSet } from 'jose';
 const jwks = createRemoteJWKSet(new URL('https://api.usewarp.net/v1/.well-known/jwks.json'));
 const { payload } = await compactVerify(receipt, jwks);
 const claims = JSON.parse(new TextDecoder().decode(payload));
-// claims.valid === true, claims.proof_id, claims.public_signals, claims.verified_at
+
+const now = Math.floor(Date.now() / 1000);
+if (!claims.valid || claims.aud !== MY_PROJECT_ID || claims.exp < now) throw new Error('Receipt rejected');
+if (!claims.nonce_bound || claims.nonce !== expectedNonce) throw new Error('Receipt is not fresh');
+// To accept each receipt once, store claims.jti until claims.exp.
 ```
 
 ## Verify on-chain

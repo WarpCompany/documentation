@@ -58,7 +58,7 @@ curl https://api.usewarp.net/v1/attestations/$ATTESTATION_ID
 }
 ```
 
-`valid` is `true` only when a real proof was recorded for the attestation. Treat `valid: false`, or a `status` such as `revoked` or `expired`, as a failed check.
+`valid` is `true` only when the attestation is active, not expired or revoked, and its proof was verified and registered on-chain in the Warp attestation registry. Treat `valid: false`, or a `status` such as `revoked` or `expired`, as a failed check.
 
 ## Next steps
 
