@@ -1,133 +1,164 @@
 {
-    "$schema": "https://mintlify.com/docs.json",
-    "theme": "aspen",
-    "name": "Warp",
-    "colors": {
-      "primary": "#9E1FAA",
-      "light": "#9E1FAA",
-      "dark": "#9E1FAA"
-    },
-    "favicon": "/favicon.png",
-    "navigation": {
-      "global": {
-        "anchors": [
-          {
-            "anchor": "Home",
-            "icon": "house",
-            "href": "https://usewarp.net"
-          },
-          {
-            "anchor": "Platform",
-            "icon": "gauge-high",
-            "href": "https://platform.usewarp.net"
-          },
-          {
-            "anchor": "GitHub",
-            "icon": "github",
-            "href": "https://github.com/WarpCompany"
-          }
-        ]
-      },
-      "tabs": [
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "aspen",
+  "name": "Warp",
+  "colors": {
+    "primary": "#9E1FAA",
+    "light": "#C04BCC",
+    "dark": "#9E1FAA"
+  },
+  "favicon": "/favicon.png",
+  "navigation": {
+    "global": {
+      "anchors": [
         {
-          "tab": "Documentation",
-          "groups": [
-            {
-              "group": "Getting Started",
-              "pages": [
-                "index",
-                "quickstart",
-                "products"
-              ]
-            },
-            {
-              "group": "Pay With Warp",
-              "pages": [
-                "warp-pay/index",
-                "warp-pay/examples"
-              ]
-            },
-            {
-              "group": "Warp Bridge",
-              "pages": [
-                "warp-bridge/introduction",
-                "warp-bridge/protocol",
-                "warp-bridge/usecases"
-              ]
-            },
-            {
-              "group": "ZK Proofs as a Service",
-              "pages": [
-                "zkproofs/introduction"
-              ]
-            },
-            {
-              "group": "ZK Validator Network",
-              "pages": [
-                "zkvalidator/introduction"
-              ]
-            }
-          ]
+          "anchor": "Home",
+          "icon": "house",
+          "href": "https://usewarp.net"
         },
         {
-          "tab": "API Reference",
-          "openapi": "openapi.json",
-          "groups": [
-            {
-              "group": "Introduction",
-              "openapi": "openapi.json"
-            }
-          ]
+          "anchor": "Platform",
+          "icon": "gauge-high",
+          "href": "https://platform.usewarp.net"
+        },
+        {
+          "anchor": "GitHub",
+          "icon": "github",
+          "href": "https://github.com/WarpCompany"
         }
       ]
     },
-    "logo": {
-      "light": "/logo/logo-black.png",
-      "dark": "/logo/logo-white.png"
-    },
-    "navbar": {
-      "links": [
-        {
-          "label": "Support",
-          "href": "mailto:support@usewarp.net"
-        }
-      ],
-      "primary": {
-        "type": "button",
-        "label": "Get Started",
-        "href": "https://platform.usewarp.net"
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting started",
+            "pages": [
+              "index",
+              "quickstart",
+              "products"
+            ]
+          },
+          {
+            "group": "Pay with Warp",
+            "pages": [
+              "warp-pay/index",
+              "warp-pay/webhooks",
+              "warp-pay/examples"
+            ]
+          },
+          {
+            "group": "ZK Proofs",
+            "pages": [
+              "zkproofs/introduction",
+              "warp-verify/overview"
+            ]
+          },
+          {
+            "group": "Roadmap",
+            "pages": [
+              "warp-bridge/introduction",
+              "warp-bridge/protocol",
+              "warp-bridge/usecases",
+              "zkvalidator/introduction"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api-reference/introduction"
+            ]
+          },
+          {
+            "group": "Checkout sessions",
+            "openapi": "openapi.json",
+            "pages": [
+              "POST /v1/checkout/sessions",
+              "GET /v1/checkout/sessions/{id}",
+              "GET /v1/checkout/sessions"
+            ]
+          },
+          {
+            "group": "ZK verification",
+            "openapi": "openapi.json",
+            "pages": [
+              "POST /v1/zk/proofs/{proofId}/nonces",
+              "POST /v1/zk/proofs/{proofId}/verify",
+              "GET /v1/zk/proofs/{proofId}/interface",
+              "GET /v1/.well-known/jwks.json"
+            ]
+          },
+          {
+            "group": "Attestations",
+            "openapi": "openapi.json",
+            "pages": [
+              "GET /v1/attestations/{id}"
+            ]
+          },
+          {
+            "group": "Health",
+            "openapi": "openapi.json",
+            "pages": [
+              "GET /health"
+            ]
+          }
+        ]
       }
-    },
-    "contextual": {
-      "options": [
-       "copy",
-       "view",
-       "chatgpt",
-       "claude",
-       "perplexity",
-       "mcp",
-       "cursor",
-       "vscode"
-     ]
-    },
-    "footer": {
-      "socials": {
-        "github": "https://github.com/WarpCompany"
+    ]
+  },
+  "logo": {
+    "light": "/logo/logo-black.svg",
+    "dark": "/logo/logo-white.svg"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Support",
+        "href": "mailto:support@usewarp.net"
       }
-    },
-    "banner": {
-      "content": "Payments API now live! Read more at API Reference",
-      "dismissible": true
-    },
-    "styling": {
-      "eyebrows": "section"
-    },
-    "api": {
-      "playground": {
-        "display": "interactive"
-      }
-    },
-    "icons": {
-      "library": "fontawesome"
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Open Warp Platform",
+      "href": "https://platform.usewarp.net"
     }
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/WarpCompany"
+    }
+  },
+  "banner": {
+    "content": "Payments API is live. [Read the API reference](/api-reference/introduction)",
+    "dismissible": true
+  },
+  "styling": {
+    "eyebrows": "section"
+  },
+  "api": {
+    "playground": {
+      "display": "interactive"
+    }
+  },
+  "icons": {
+    "library": "fontawesome"
   }
+}

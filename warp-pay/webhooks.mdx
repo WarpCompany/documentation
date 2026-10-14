@@ -1,0 +1,216 @@
+---
+title: "Webhooks for Pay with Warp"
+sidebarTitle: "Webhooks"
+description: "Receive signed payment.completed, payment.failed and payment.expired events, verify the signature and handle retries."
+icon: "bell"
+---
+
+Warp sends an HTTPS `POST` to your webhook URL when a checkout session reaches a final state. Use webhooks to fulfill orders instead of relying on the customer's redirect.
+
+## Prerequisites
+
+- A Warp project with a public HTTPS endpoint that can receive `POST` requests.
+- In the [Warp Platform](https://platform.usewarp.net), open your project's settings, set the **webhook URL** and copy the **signing secret**. Store the secret on your server, for example as `WARP_WEBHOOK_SECRET`.
+
+<Note>
+  Webhook URLs must be publicly reachable. Warp does not deliver to private, loopback or link-local addresses.
+</Note>
+
+## Events
+
+| Event | Sent when |
+| --- | --- |
+| `payment.completed` | The payment was verified on-chain. The session `status` is `completed`. |
+| `payment.failed` | The submitted transaction did not pass verification. The session `status` is `failed`. |
+| `payment.expired` | No payment was made within 30 minutes. The session `status` is `expired`. |
+
+## Request format
+
+Each delivery has these headers:
+
+| Header | Value |
+| --- | --- |
+| `Content-Type` | `application/json` |
+| `Warp-Event-Id` | The event ID, `evt_...`. The same value as `id` in the body. |
+| `Warp-Signature` | `t=<unix timestamp>,v1=<signature>` |
+
+The body wraps the [checkout session](/api-reference/checkout-sessions/retrieve) object:
+
+```json
+{
+  "id": "evt_3c59dc048e8850243be8079a5c74d079",
+  "type": "payment.completed",
+  "created": 1792065330,
+  "data": {
+    "object": {
+      "id": "ps_8f14e45fceea167a5a36dedd4bea2543",
+      "object": "checkout.session",
+      "amount_usd": "49.99",
+      "currency": "USD",
+      "description": "Order #1234",
+      "metadata": { "order_id": "1234" },
+      "status": "completed",
+      "network": "testnet",
+      "return_url": "https://example.com/orders/1234",
+      "cancel_url": "https://example.com/cart",
+      "expires_at": "2026-10-14T12:30:00.000Z",
+      "created_at": "2026-10-14T12:00:00.000Z",
+      "checkout_url": "https://checkout.usewarp.net/session/ps_8f14e45fceea167a5a36dedd4bea2543",
+      "payment": {
+        "chain": "base-sepolia",
+        "token": "USDC",
+        "tx_hash": "0x5f2c...",
+        "amount": "49.99",
+        "confirmations": 1,
+        "completed_at": "2026-10-14T12:05:30.000Z"
+      }
+    }
+  }
+}
+```
+
+## Verify the signature
+
+`v1` is the hex-encoded HMAC-SHA256 of `<t>.<raw request body>`, keyed with your signing secret. To verify a delivery:
+
+1. Read the **raw** request body. Don't parse and re-serialize the JSON first.
+2. Split `Warp-Signature` on `,` and read `t` and `v1`.
+3. Compute the HMAC of `` `${t}.${rawBody}` `` with your secret and compare it to `v1` in constant time.
+4. Reject the event if `t` is more than a few minutes from your server's clock, to limit replay.
+
+<CodeGroup>
+
+```javascript Node.js
+import crypto from 'node:crypto';
+
+export function verifyWarpSignature(rawBody, header, secret, toleranceSeconds = 300) {
+  if (!header || !secret) return false;
+  const parts = Object.fromEntries(
+    header.split(',').map((part) => {
+      const i = part.indexOf('=');
+      return [part.slice(0, i).trim(), part.slice(i + 1).trim()];
+    }),
+  );
+  const { t, v1 } = parts;
+  if (!t || !v1 || !/^\d+$/.test(t)) return false;
+  if (Math.abs(Date.now() / 1000 - Number(t)) > toleranceSeconds) return false;
+
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(`${t}.`)
+    .update(rawBody) // Buffer from express.raw()
+    .digest('hex');
+
+  const a = Buffer.from(expected, 'hex');
+  const b = Buffer.from(v1, 'hex');
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+```
+
+```python Python
+import hashlib
+import hmac
+import time
+
+
+def verify_warp_signature(raw_body: bytes, header: str, secret: str, tolerance: int = 300) -> bool:
+    try:
+        parts = dict(p.strip().split("=", 1) for p in header.split(","))
+        t, v1 = parts["t"], parts["v1"]
+        timestamp = int(t)
+    except (AttributeError, KeyError, ValueError):
+        return False
+    if abs(time.time() - timestamp) > tolerance:
+        return False
+    expected = hmac.new(secret.encode(), f"{t}.".encode() + raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, v1)
+```
+
+</CodeGroup>
+
+## Example
+
+<CodeGroup>
+
+```javascript Node.js (Express)
+import express from 'express';
+import { verifyWarpSignature } from './warp-webhooks.js';
+
+const app = express();
+
+// Use the raw body: the signature is computed over the exact bytes Warp sent.
+app.post('/webhooks/warp', express.raw({ type: 'application/json' }), async (req, res) => {
+  if (!verifyWarpSignature(req.body, req.get('Warp-Signature'), process.env.WARP_WEBHOOK_SECRET)) {
+    return res.status(400).send('Invalid signature');
+  }
+
+  const event = JSON.parse(req.body.toString('utf8'));
+
+  // Deliveries can repeat. Process each event ID once.
+  if (await alreadyProcessed(event.id)) return res.sendStatus(200);
+
+  const session = event.data.object;
+  switch (event.type) {
+    case 'payment.completed':
+      await markOrderPaid(session.metadata.order_id, session.payment.tx_hash);
+      break;
+    case 'payment.failed':
+    case 'payment.expired':
+      await releaseOrder(session.metadata.order_id);
+      break;
+  }
+
+  await recordProcessed(event.id);
+  res.sendStatus(200);
+});
+```
+
+```python Python (Flask)
+import json
+import os
+
+from flask import Flask, request
+
+from warp_webhooks import verify_warp_signature
+
+app = Flask(__name__)
+
+
+@app.post("/webhooks/warp")
+def warp_webhook():
+    raw = request.get_data()  # raw bytes, before JSON parsing
+    if not verify_warp_signature(raw, request.headers.get("Warp-Signature", ""), os.environ["WARP_WEBHOOK_SECRET"]):
+        return "Invalid signature", 400
+
+    event = json.loads(raw)
+    if already_processed(event["id"]):
+        return "", 200
+
+    session = event["data"]["object"]
+    if event["type"] == "payment.completed":
+        mark_order_paid(session["metadata"]["order_id"], session["payment"]["tx_hash"])
+    elif event["type"] in ("payment.failed", "payment.expired"):
+        release_order(session["metadata"]["order_id"])
+
+    record_processed(event["id"])
+    return "", 200
+```
+
+</CodeGroup>
+
+## Delivery and retries
+
+- Respond with a `2xx` status within 10 seconds. Do slow work (emails, fulfillment jobs) after you respond or in a background job.
+- Any other response, a timeout or a connection error counts as a failure. Warp retries after 1 minute, 5 minutes, 30 minutes, 2 hours, 6 hours, 12 hours and 24 hours. After the last attempt the delivery is marked failed.
+- The same event can arrive more than once, and events can arrive out of order. Deduplicate by event ID (`Warp-Event-Id` or `id`) and, when in doubt, [retrieve the session](/api-reference/checkout-sessions/retrieve) for its current `status`.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Create a session and take a test payment.
+  </Card>
+  <Card title="Retrieve a checkout session" icon="code" href="/api-reference/checkout-sessions/retrieve">
+    Check a session's current status from your server.
+  </Card>
+</CardGroup>

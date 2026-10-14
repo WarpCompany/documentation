@@ -1,66 +1,42 @@
 ---
-title: "Get Started"
-description: "Warp Bridge is a no-KYC cross-chain transfer protocol designed for fast transfers, competitive pricing, and progressively stronger privacy."
+title: "Warp Bridge"
+sidebarTitle: "Warp Bridge"
+description: "Warp Bridge is a planned solver-based cross-chain transfer protocol using a lock-and-fulfill model. It is not yet available."
+icon: "bridge"
 ---
+
+<Note>
+  **Roadmap.** Warp Bridge is a design proposal and is not yet available. This page describes planned behavior, which may change.
+</Note>
 
 ![Warp Bridge](/images/warp-bridge.jpg)
 
-## Warp Bridge
+Warp Bridge is a planned cross-chain transfer protocol. Instead of a large shared liquidity pool, it would use a **lock-and-fulfill** model: the user's tokens are locked in a contract on the source chain, a permissionless solver delivers the destination tokens to the recipient from its own liquidity, and the locked tokens are released to the solver once the fulfillment is verified.
 
-**Move Crypto Across Chains — Without KYC, Complexity, or Pooled Liquidity**
+## Design goals
 
-Warp Bridge is a cross-chain transfer protocol designed for speed, simplicity, and progressive privacy. Instead of depending on the large, idle liquidity pools that traditional bridges rely on, Warp Bridge uses a **lock-and-fulfill** model: the user's tokens are locked in a contract on the source chain, a permissionless solver delivers the destination tokens to the recipient from its own liquidity, and the locked funds are released to the solver once the fulfillment has been verified. See [Protocol](/warp-bridge/protocol) for the full design.
+- **Fast delivery** — the recipient would be paid from solver liquidity as soon as the fulfillment transaction confirms, without waiting for cross-chain messaging.
+- **No KYC** — users would connect a wallet and transfer, with no account.
+- **Competitive pricing** — solvers would compete to fill orders.
+- **Per-order risk** — funds would be locked per order rather than pooled, avoiding a large shared balance that attracts attacks.
+- **Native tokens** — transfers would avoid wrapped assets where possible.
+- **Order + call execution** — a transfer could trigger an action on the destination chain, such as a deposit or a stake.
+- **Privacy** — later versions may add routing that makes transfers harder to link on-chain.
 
-<Note>
-  Warp Bridge is under active development. The Bridge API, widget, and contract integrations are **Coming Soon**, and features marked **Planned** or **Roadmap** are not yet available.
-</Note>
+## Planned developer access
 
-<Tip>
-  Our mission is to make cross-chain movement as easy as a swap, while gradually rolling out privacy layers designed to make transfers harder to link as network activity grows.
-</Tip>
+Warp Bridge is planned to offer a REST API for quotes, transfer submission and status tracking, an embeddable widget, and direct contract integration. None of these are available yet. See [Integration options](/warp-bridge/usecases).
 
-## The Cross-Chain Experience
+## Next steps
 
-Warp Bridge replaces the traditional "lock-and-wait" bridging model with a solver-driven flow designed for both everyday users and developers.
-
-## Advantages
-
-- **Fast Settlement** — Solvers deliver destination funds from their own liquidity, so users are not left waiting on long cross-chain confirmation windows.
-- **Seamless, No-KYC UX** — Just connect, swap, and go. No accounts. No sign-ups.
-- **Low Slippage and Fair Pricing** — Solvers compete to fill orders, which is designed to deliver competitive rates and minimize volatility impact.
-- **Scales With Demand** — The architecture is designed to grow with network activity as more solvers participate.
-- **Native Token Transfers** — Avoid unnecessary wrapped or custodial assets wherever possible.
-- **Reduced Risk Exposure** — Funds are locked per order rather than pooled, avoiding the large shared TVL that makes traditional bridges attractive targets.
-- **Privacy that Gets Stronger Over Time** _(Roadmap)_ — As more users transact, transfers are designed to blend together, making them harder to link.
-- **Order + Call Execution** _(Planned)_ — Let a transfer trigger actions automatically on the destination chain — e.g., deposit into a vault, stake, execute a trade, or interact with a contract.
-
-Warp Bridge aims to provide a fast, simple, and progressively private cross-chain experience.
-
-## For Developers
-
-Warp Bridge is designed to offer a lightweight, developer-friendly API _(Coming Soon)_ that removes the complexity of cross-chain interactions. It is planned to let you:
-
-- Request cross-chain quotes in seconds
-- Execute transfers with minimal latency
-- Track every step of a transfer's lifecycle
-- Integrate privacy-enhanced routing as new layers roll out _(Roadmap)_
-- Build cross-chain apps without touching low-level RPCs or complex contract calls
-
-Warp Bridge handles the infrastructure. You focus on your product.
-
-## Next Steps
-
-<Columns cols={2}>
-  <Card title="Explore the Protocol Overview" icon="microscope" href="/warp-bridge/protocol">
-    Learn how the protocol layer, solver layer, and settlement work together.
+<CardGroup cols={2}>
+  <Card title="Protocol design" icon="microscope" href="/warp-bridge/protocol">
+    Contracts, solvers, order lifecycle and cancellation.
   </Card>
-  <Card title="Start Building with Warp's API" icon="code" href="/quickstart">
-    Accept payments today with the Checkout API while the Bridge API is in development.
+  <Card title="Integration options" icon="lightbulb" href="/warp-bridge/usecases">
+    The planned API, widget and contract integrations.
   </Card>
-  <Card title="Integrate the Widget (Coming Soon)" icon="window" href="/quickstart#embedded-widget-coming-soon">
-    A ready-made interface for applications that want cross-chain functionality.
+  <Card title="Accept payments today" icon="credit-card" href="/quickstart">
+    Pay with Warp is live.
   </Card>
-  <Card title="Explore Use Cases" icon="lightbulb" href="/warp-bridge/usecases">
-    Compare the API, widget, and smart contract integration paths.
-  </Card>
-</Columns>
+</CardGroup>

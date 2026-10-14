@@ -1,200 +1,168 @@
 ---
-title: "Quickstart"
-description: "This guide walks you through your first Warp integration — from project setup to accepting your first cross-chain payment."
+title: "Quickstart: accept your first payment"
+sidebarTitle: "Quickstart"
+description: "Create a checkout session on your server, redirect the customer to Warp's hosted checkout and confirm the payment with a webhook."
+icon: "rocket"
 ---
 
-## Getting Started
+This guide takes you from a new Warp project to a completed test payment. You create a checkout session from your server, send the customer to the hosted checkout page, and fulfill the order when Warp sends a `payment.completed` webhook.
 
-Whether you're building a storefront, a SaaS product, or a dApp, Pay With Warp provides a simple REST API for accepting crypto payments. This guide uses the [Checkout API](/api-reference/checkout-api/create-payment-session) to create a payment session, send the customer to Warp's hosted checkout, and track the result.
+## Prerequisites
 
-<Note>
-  Warp is under active development. Features marked **Coming Soon** are not yet available. Official SDKs are coming soon — until then, call the REST API directly with any HTTP client.
-</Note>
+- A [Warp Platform](https://platform.usewarp.net) account with a project, and a receiving address configured for testnet payments.
+- Your project's **test secret key** (`sk_test_...`). Secret keys are shown only once, when you create the project or rotate the key — store it in your server's environment, for example as `WARP_SECRET_KEY`.
+- A wallet such as MetaMask or any WalletConnect-compatible wallet, funded with testnet ETH or testnet USDC on a [supported testnet](/warp-pay#supported-networks-and-tokens) such as Sepolia or Base Sepolia.
 
----
+<Warning>
+  Secret keys can create sessions and read your payments. Use them only on your server. Never put a secret key in browser code, a mobile app or a public repository.
+</Warning>
 
-## Before You Begin
+## Steps
 
-<AccordionGroup>
-  <Accordion title="Create a project and get your public key" icon="key">
-    To accept payments, you'll need a project on the Warp Platform:
+<Steps>
+  <Step title="Create a checkout session">
+    From your backend, create a session for the order amount in USD. Because you're using an `sk_test_` key, the session is a testnet session.
 
-    1. Visit the [Warp Platform](https://platform.usewarp.net)
-    2. Create an account or sign in
-    3. Create an organization and a project, and configure where you want to receive funds
-    4. Copy the project's **public key** (it starts with `pk_`) — you'll use it to create payment sessions
+    <CodeGroup>
 
-    <Warning>
-      Never expose account credentials or session tokens in client-side code or public repositories. Create payment sessions from your backend so that customers cannot change the amount.
-    </Warning>
-  </Accordion>
-  <Accordion title="Set up a test wallet" icon="wallet">
-    For testing payments:
+    ```bash cURL
+    curl https://api.usewarp.net/v1/checkout/sessions \
+      -H "Authorization: Bearer $WARP_SECRET_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "amount_usd": 49.99,
+        "description": "Order #1234",
+        "metadata": { "order_id": "1234" },
+        "return_url": "https://example.com/orders/1234",
+        "cancel_url": "https://example.com/cart"
+      }'
+    ```
 
-    1. Use a testnet-compatible wallet (MetaMask, WalletConnect, etc.)
-    2. Add testnet networks (e.g., Ethereum Sepolia, Arbitrum Sepolia, Base Sepolia, Polygon Amoy)
-    3. Fund your wallet with testnet tokens from public faucets
+    ```javascript Node.js
+    const res = await fetch('https://api.usewarp.net/v1/checkout/sessions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.WARP_SECRET_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        amount_usd: 49.99,
+        description: 'Order #1234',
+        metadata: { order_id: '1234' },
+        return_url: 'https://example.com/orders/1234',
+        cancel_url: 'https://example.com/cart',
+      }),
+    });
+    if (!res.ok) {
+      const { error } = await res.json();
+      throw new Error(`${error.code}: ${error.message}`);
+    }
+    const session = await res.json();
+    ```
 
-    <Tip>
-      Warp supports both mainnet and testnet environments. Always test on testnets first.
-    </Tip>
-  </Accordion>
-</AccordionGroup>
+    ```python Python
+    import os
+    import requests
 
----
+    res = requests.post(
+        "https://api.usewarp.net/v1/checkout/sessions",
+        headers={"Authorization": f"Bearer {os.environ['WARP_SECRET_KEY']}"},
+        json={
+            "amount_usd": 49.99,
+            "description": "Order #1234",
+            "metadata": {"order_id": "1234"},
+            "return_url": "https://example.com/orders/1234",
+            "cancel_url": "https://example.com/cart",
+        },
+        timeout=10,
+    )
+    res.raise_for_status()
+    session = res.json()
+    ```
 
-## Integration Path
+    </CodeGroup>
 
-Choose the integration method that best fits your use case:
+    The response is the new session:
 
-<CardGroup cols={3}>
-  <Card title="REST API" icon="code" href="#quick-integration-rest-api">
-    Backend integrations, custom UIs, mobile apps
+    ```json
+    {
+      "id": "ps_8f14e45fceea167a5a36dedd4bea2543",
+      "object": "checkout.session",
+      "amount_usd": "49.99",
+      "currency": "USD",
+      "description": "Order #1234",
+      "metadata": { "order_id": "1234" },
+      "status": "pending",
+      "network": "testnet",
+      "return_url": "https://example.com/orders/1234",
+      "cancel_url": "https://example.com/cart",
+      "expires_at": "2026-10-14T12:30:00.000Z",
+      "created_at": "2026-10-14T12:00:00.000Z",
+      "checkout_url": "https://checkout.usewarp.net/session/ps_8f14e45fceea167a5a36dedd4bea2543"
+    }
+    ```
 
-    Create payment sessions and track their status with simple HTTP requests.
-  </Card>
-  <Card title="JavaScript (fetch)" icon="js" href="#quick-integration-javascript">
-    Node.js backends and serverless functions
+    Save the session `id` with your order. Sessions expire 30 minutes after they're created.
+  </Step>
+  <Step title="Redirect the customer to checkout">
+    Send the customer to `checkout_url`. The hosted page lets them connect a wallet, choose a supported chain and token, and pay. Warp then verifies the transaction on-chain.
 
-    The same REST flow using the built-in `fetch` API.
-  </Card>
-  <Card title="Embedded Widget (Coming Soon)" icon="window" href="#embedded-widget-coming-soon">
-    Fastest deployment, minimal code changes
+    - On the payment success page, a **Back to merchant** button returns the customer to your `return_url`.
+    - On the checkout page, a **Cancel and return** link sends the customer to your `cancel_url`.
 
-    A drop-in UI component for cross-chain transfers and payments.
-  </Card>
-</CardGroup>
+    A redirect to `return_url` is not proof of payment. Confirm the payment with a webhook or by retrieving the session.
+  </Step>
+  <Step title="Handle the webhook">
+    In the Warp Platform, set your project's webhook URL and copy its signing secret into `WARP_WEBHOOK_SECRET`. Warp sends `payment.completed` when the payment is verified. Verify the signature, then fulfill the order:
 
----
+    ```javascript Node.js (Express)
+    import express from 'express';
+    import { verifyWarpSignature } from './warp-webhooks.js'; // see the Webhooks guide
 
-## Quick Integration: REST API
+    const app = express();
 
-### Step 1: Create a Payment Session
+    app.post('/webhooks/warp', express.raw({ type: 'application/json' }), async (req, res) => {
+      if (!verifyWarpSignature(req.body, req.get('Warp-Signature'), process.env.WARP_WEBHOOK_SECRET)) {
+        return res.status(400).send('Invalid signature');
+      }
+      const event = JSON.parse(req.body.toString('utf8'));
+      if (event.type === 'payment.completed') {
+        await fulfillOrder(event.data.object.metadata.order_id); // your own logic
+      }
+      res.sendStatus(200);
+    });
+    ```
 
-From your backend, create a payment session for the order amount in USD:
+    The [Webhooks](/warp-pay/webhooks) guide has the full signature verification code for Node.js and Python.
+  </Step>
+  <Step title="Test the payment">
+    Open the `checkout_url`, pay with your testnet wallet, and wait for the confirmation. Then check the session from your server:
 
-```bash
-curl -X POST https://checkout.usewarp.net/api/sessions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "public_key": "pk_YOUR_PROJECT_PUBLIC_KEY",
-    "amount_usd": 49.99,
-    "description": "Order #1234",
-    "metadata": { "orderId": "1234" },
-    "return_url": "https://yourstore.com/orders/1234/success",
-    "cancel_url": "https://yourstore.com/orders/1234/cancel"
-  }'
-```
+    ```bash
+    curl https://api.usewarp.net/v1/checkout/sessions/ps_8f14e45fceea167a5a36dedd4bea2543 \
+      -H "Authorization: Bearer $WARP_SECRET_KEY"
+    ```
 
-**Response:**
+    `status` is `completed` and the `payment` object shows the chain, token, transaction hash and confirmations.
+  </Step>
+  <Step title="Go live">
+    Replace `sk_test_...` with your live secret key (`sk_live_...`) and make sure your project has a mainnet receiving address. Sessions created with a live key are mainnet sessions — there is no separate base URL or `network` parameter.
+  </Step>
+</Steps>
 
-```json
-{
-  "session_id": "ps_1a2b3c4d5e6f",
-  "checkout_url": "https://checkout.usewarp.net/session/ps_1a2b3c4d5e6f",
-  "expires_at": "2026-01-15T10:15:00Z"
-}
-```
-
-### Step 2: Redirect the Customer to Checkout
-
-Send the customer to the returned `checkout_url`. The hosted checkout handles wallet connection, token and chain selection, pricing, and transaction submission. When the payment finishes, the customer is sent back to your `return_url` (or to `cancel_url` if they cancel).
-
-### Step 3: Track Payment Status
-
-Poll the session status from your backend:
-
-```bash
-curl https://checkout.usewarp.net/api/status/ps_1a2b3c4d5e6f
-```
-
-**Response:**
-
-```json
-{
-  "session_id": "ps_1a2b3c4d5e6f",
-  "status": "completed",
-  "verification_step": "completed",
-  "tx_hash": "0xabc123...",
-  "verified_at": "2026-01-15T10:12:30Z",
-  "completed_at": "2026-01-15T10:12:34Z"
-}
-```
-
-`status` is one of `pending`, `processing`, `completed`, or `failed`. Only fulfill the order once `status` is `completed`, and always check the status from your backend rather than trusting the redirect alone.
-
----
-
-## Quick Integration: JavaScript
-
-The same flow in Node.js 18+ using the built-in `fetch` API:
-
-```javascript
-const CHECKOUT_API = 'https://checkout.usewarp.net/api';
-
-// 1. Create a payment session (server-side)
-async function createPaymentSession(order) {
-  const res = await fetch(`${CHECKOUT_API}/sessions`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      public_key: process.env.WARP_PUBLIC_KEY, // pk_...
-      amount_usd: order.totalUsd,
-      description: `Order #${order.id}`,
-      metadata: { orderId: order.id },
-      return_url: `https://yourstore.com/orders/${order.id}/success`,
-      cancel_url: `https://yourstore.com/orders/${order.id}/cancel`
-    })
-  });
-  if (!res.ok) {
-    throw new Error(`Failed to create session: HTTP ${res.status}`);
-  }
-  return res.json(); // { session_id, checkout_url, expires_at }
-}
-
-// 2. Check the session status
-async function getSessionStatus(sessionId) {
-  const res = await fetch(`${CHECKOUT_API}/status/${encodeURIComponent(sessionId)}`);
-  if (!res.ok) {
-    throw new Error(`Failed to fetch status: HTTP ${res.status}`);
-  }
-  return res.json(); // { session_id, status, verification_step, tx_hash, ... }
-}
-
-const session = await createPaymentSession({ id: '1234', totalUsd: 49.99 });
-console.log('Redirect the customer to:', session.checkout_url);
-
-const status = await getSessionStatus(session.session_id);
-console.log('Payment status:', status.status);
-```
-
----
-
-## Embedded Widget (Coming Soon)
-
-A drop-in widget for cross-chain transfers and payments is in development. It is designed to handle wallet connection, quote fetching, and execution automatically, so you can add Warp to a page with a few lines of code.
-
----
-
-## Next Steps
+## Next steps
 
 <CardGroup cols={2}>
-  <Card title="Explore Warp Bridge" icon="bridge" href="/warp-bridge/introduction">
-    Learn about cross-chain transfer architecture, settlement mechanisms, and the privacy roadmap.
+  <Card title="Webhooks" icon="bell" href="/warp-pay/webhooks">
+    Events, payload, signature verification and retries.
   </Card>
-  <Card title="Payment Integration" icon="credit-card" href="/warp-pay/index">
-    Learn how Pay With Warp lets customers pay with supported tokens on supported chains.
+  <Card title="Pay with Warp" icon="credit-card" href="/warp-pay">
+    Supported networks and tokens, and the session lifecycle.
   </Card>
-  <Card title="API Reference" icon="book" href="/api-reference/checkout-api/create-payment-session">
-    API documentation with endpoints, parameters, and response schemas.
+  <Card title="Integration examples" icon="code-branch" href="/warp-pay/examples">
+    Express, React and Python examples.
   </Card>
-  <Card title="Integration Examples" icon="code-branch" href="/warp-pay/examples">
-    View illustrative code samples for storefronts and backends.
+  <Card title="API reference" icon="code" href="/api-reference/introduction">
+    Every endpoint, parameter and error.
   </Card>
 </CardGroup>
-
----
-
-<Card title="Need Help?" icon="question-circle" horizontal href="mailto:support@usewarp.net">
-  Email support@usewarp.net for integration assistance.
-</Card>

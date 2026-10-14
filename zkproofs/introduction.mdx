@@ -1,122 +1,250 @@
 ---
-title: "Get Started"
-description: "Zero-knowledge proofs enable private, verifiable smart contracts with off-chain computation and on-chain verification."
+title: "ZK Proofs"
+sidebarTitle: "ZK Proofs"
+description: "Write a Circom circuit in the Warp Platform, deploy a Groth16 verifier to a testnet, and verify proofs on-chain or with the Warp API."
+icon: "shield-check"
 ---
+
+<Note>
+  **Beta.** ZK Proofs is in beta. Verifier deployment is available on testnets, and interfaces may change before general availability.
+</Note>
 
 ![ZK Proofs](/images/zk-proofs.jpg)
 
-## Building ZK Proofs with Warp
+ZK Proofs lets you build a zero-knowledge circuit in the Warp Platform, deploy its Groth16 verifier contract, and check proofs either directly on-chain or through Warp's hosted verification API. Your users generate proofs on their own devices, so private inputs never leave them.
 
-A zero-knowledge proof allows a party to prove that a specific computation or set of rules was executed correctly without revealing the private inputs used to perform that computation. The chain does not execute the logic itself. It verifies a proof that the logic was executed correctly off-chain.
+## Prerequisites
 
-<Info>
-  ZK Proofs as a Service is in **beta**. Write, compile, and deploy ZK proofs on the [Warp Platform](https://platform.usewarp.net), or programmatically with the [ZK Proofs API](/api-reference/zk-proofs/list-zk-proofs).
-</Info>
+- A [Warp Platform](https://platform.usewarp.net) account and project.
+- Your project's secret key, if you use the hosted verification API. See [Authentication](/api-reference/introduction#authentication).
+- Basic familiarity with [Circom](https://docs.circom.io) and [snarkjs](https://github.com/iden3/snarkjs).
 
-Operationally:
+## How it works
 
-- Computation and sensitive data stay off-chain
-- The contract only verifies proof validity
-- Verification cost is bounded and predictable
+A circuit defines the rules a statement must satisfy. A prover with private inputs generates a small proof that the rules hold, plus a list of **public signals** (the values everyone can see). A verifier checks the proof against the public signals without learning the private inputs. Warp uses Circom circuits and the Groth16 proving system on the BN254 curve.
 
-This model is used to enforce correctness without exposing data or paying full on-chain execution costs.
+## Steps
 
-## ZK Contracts Without Writing Solidity
+<Steps>
+  <Step title="Write and compile the circuit">
+    In your project, open **ZK Proofs** and create a proof. Write the circuit in the Circom editor, or describe what you want to the built-in AI assistant and edit the code it suggests. Compile the circuit to check it and see its constraint count. Compilation produces the circuit's `.wasm` (witness generator) and `.r1cs` files.
+  </Step>
+  <Step title="Run the trusted setup">
+    Groth16 needs a circuit-specific setup. Run it from the proof's deploy page. It produces the proving key (`.zkey`) that provers use and the verification key that verifiers use. Download the `.wasm` and `.zkey` files — you'll ship them with your app.
+  </Step>
+  <Step title="Deploy the verifier">
+    Deploy the generated Solidity verifier to **Sepolia** or **Base Sepolia**. During local development you can deploy to an Anvil chain (chain ID `31337`). The proof page shows the contract address once deployment completes.
+  </Step>
+  <Step title="Generate a proof on the client">
+    Generate proofs where the private inputs live — usually the user's browser or device — with snarkjs:
 
-The system is designed to let users deploy ZK-powered smart contracts without writing Solidity or implementing ZK circuits manually. Users define constraints — the rules that must be satisfied — and the platform generates the circuit, prover, and on-chain verifier. Developers who prefer to write circuits directly can also create and compile their own Circom projects.
+    ```javascript
+    import * as snarkjs from 'snarkjs';
 
-At deployment time:
+    const { proof, publicSignals } = await snarkjs.groth16.fullProve(
+      { /* private and public inputs for your circuit */ },
+      '/circuits/main.wasm',
+      '/circuits/circuit_final.zkey',
+    );
+    // Send { proof, publicSignals } to your server. Never send the private inputs.
+    ```
+  </Step>
+  <Step title="Verify the proof">
+    Verify with the hosted API (below) or by calling the verifier contract directly (see [Verify on-chain](#verify-on-chain)).
+  </Step>
+</Steps>
 
-- Constraints are compiled into a ZK circuit
-- A verifier contract is deployed on-chain
-- No private logic or data is stored on-chain
+## Verify with the Warp API
 
-The resulting contract behaves like any other Ethereum contract, with the difference that correctness is proven rather than executed.
+Hosted verification checks the proof off-chain against the proof's stored verification key, optionally calls your deployed verifier too, and returns a signed **receipt** you can store or forward as evidence. Only your project's secret key can verify your project's proofs, so call it from your server.
 
-## Constraint Definition (What Users Specify)
+To stop a captured request from being replayed, fetch a single-use nonce first. Nonces expire after 10 minutes.
 
-Users define constraints that describe what must be true for a proof to verify. These constraints map directly to circuit conditions and verifier checks.
+<CodeGroup>
 
-Typical examples include:
+```bash cURL
+# 1. Get a nonce
+curl -X POST https://api.usewarp.net/v1/zk/proofs/$PROOF_ID/nonces \
+  -H "Authorization: Bearer $WARP_SECRET_KEY"
 
-**Trading rules**
+# 2. Verify
+curl https://api.usewarp.net/v1/zk/proofs/$PROOF_ID/verify \
+  -H "Authorization: Bearer $WARP_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "proof": { "pi_a": ["..."], "pi_b": [["..."]], "pi_c": ["..."] }, "public_signals": ["1"], "nonce": "<nonce>", "onchain": true }'
+```
 
-- A trade size is within a defined range
-- Execution price is within a tolerance of a reference price
-- Slippage remains below a fixed threshold
+```javascript Node.js
+const API = 'https://api.usewarp.net/v1';
+const headers = {
+  Authorization: `Bearer ${process.env.WARP_SECRET_KEY}`,
+  'Content-Type': 'application/json',
+};
 
-The contract enforces the rule without revealing trade size, entry price, or strategy.
+const { nonce } = await fetch(`${API}/zk/proofs/${proofId}/nonces`, { method: 'POST', headers })
+  .then((r) => r.json());
 
-**Risk limits**
+const result = await fetch(`${API}/zk/proofs/${proofId}/verify`, {
+  method: 'POST',
+  headers,
+  body: JSON.stringify({ proof, public_signals: publicSignals, nonce, onchain: true }),
+}).then((r) => r.json());
 
-- Wallet balance is above a minimum
-- Leverage stays below a maximum
-- Drawdown remains within bounds
+if (!result.valid || result.checks.nonce !== 'ok') throw new Error('Proof rejected');
+```
 
-The proof shows compliance with the risk model without exposing balances or positions.
+```python Python
+import os
+import requests
 
-**Strategy proofs**
+API = "https://api.usewarp.net/v1"
+headers = {"Authorization": f"Bearer {os.environ['WARP_SECRET_KEY']}"}
 
-- A sequence of actions followed predefined logic
-- Parameters stayed within allowed ranges
-- Outputs were derived from approved inputs
+nonce = requests.post(f"{API}/zk/proofs/{proof_id}/nonces", headers=headers, timeout=10).json()["nonce"]
+result = requests.post(
+    f"{API}/zk/proofs/{proof_id}/verify",
+    headers=headers,
+    json={"proof": proof, "public_signals": public_signals, "nonce": nonce, "onchain": True},
+    timeout=30,
+).json()
 
-This allows users to prove a strategy was followed without revealing the strategy itself.
+if not result["valid"] or result["checks"].get("nonce") != "ok":
+    raise ValueError("Proof rejected")
+```
 
----
+</CodeGroup>
 
-## Proof Flow and On-Chain Verification
+The response reports each check:
 
-Proofs are generated off-chain using private inputs and the deployed circuit. The proof is submitted to the verifier contract, which performs a cryptographic check and gates execution on the result.
+```json
+{
+  "valid": true,
+  "proof_id": "6f1c...",
+  "checks": {
+    "offchain": true,
+    "onchain": { "chain_id": 11155111, "contract_address": "0x...", "result": true },
+    "nonce": "ok",
+    "policy": "n/a"
+  },
+  "verified_at": "2026-10-14T12:00:00.000Z",
+  "receipt": "eyJhbGciOiJFZERTQSIs..."
+}
+```
 
-What matters for implementation:
+- `public_signals` must have exactly as many values as the circuit outputs, each a decimal string below the BN254 field modulus.
+- `onchain` runs an `eth_call` to the verifier stored for the proof, on supported chains (Ethereum, Sepolia, Base, Base Sepolia).
+- `nonce` is `ok`, `missing` (none sent), `used` or `expired`.
+- `policy` is `ok` or `mismatch` when policies are configured for the proof in the Warp Platform, otherwise `n/a`.
 
-- The contract never receives private inputs
-- Only the proof and public parameters are submitted
-- Execution is conditional on proof validity
+### Verify the receipt
 
-If the proof verifies, the contract proceeds. If it fails, the transaction reverts.
+The `receipt` is a compact JWS signed with Ed25519 (`alg: EdDSA`). Its payload is `{ proof_id, public_signals, valid, verified_at, chain_id? }`. Anyone can check it with Warp's public keys:
 
----
+```javascript
+import { compactVerify, createRemoteJWKSet } from 'jose';
 
-## Dashboard vs API (Same System, Different Interfaces)
+const jwks = createRemoteJWKSet(new URL('https://api.usewarp.net/v1/.well-known/jwks.json'));
+const { payload } = await compactVerify(receipt, jwks);
+const claims = JSON.parse(new TextDecoder().decode(payload));
+// claims.valid === true, claims.proof_id, claims.public_signals, claims.verified_at
+```
 
-The Dashboard and API are two interfaces over the same contract and circuit generation system.
+## Verify on-chain
 
-The Dashboard is intended for rapid definition and deployment:
+The deployed verifier exposes the standard snarkjs Groth16 function:
 
-- Constraints are defined declaratively
-- Contracts are generated and deployed automatically
+```solidity
+function verifyProof(
+    uint256[2] calldata _pA,
+    uint256[2][2] calldata _pB,
+    uint256[2] calldata _pC,
+    uint256[N] calldata _pubSignals // N = number of public signals
+) external view returns (bool);
+```
 
-The API exposes the same capabilities programmatically:
+[Get the verifier interface](/api-reference/zk-verification/get-interface) returns the contract address, chain, exact ABI and ready-made snippets for your proof.
 
-- Constraints defined as structured inputs
-- Integration into bots, backends, or automated systems
+<Warning>
+  Pass at least 300,000 gas (Warp uses 500,000). The snarkjs verifier returns `false` instead of reverting when it runs out of gas, so a low gas limit looks like an invalid proof.
+</Warning>
 
-There is no functional difference in the resulting contracts.
+<CodeGroup>
 
----
+```javascript viem
+import { createPublicClient, decodeFunctionResult, encodeFunctionData, http } from 'viem';
+import { sepolia } from 'viem/chains';
 
-## Running Contracts on the Network _(Coming Soon)_
+const client = createPublicClient({ chain: sepolia, transport: http() });
 
-Verification on Ethereum has a fixed cost ceiling, but that cost is non-trivial at scale. The system is planned to support running ZK contracts on a dedicated network where proof validation is performed by decentralized providers through the [ZK Validator Network](/zkvalidator/introduction).
+// snarkjs output -> Solidity arguments (note the swapped pi_b coordinates)
+const args = [
+  [BigInt(proof.pi_a[0]), BigInt(proof.pi_a[1])],
+  [
+    [BigInt(proof.pi_b[0][1]), BigInt(proof.pi_b[0][0])],
+    [BigInt(proof.pi_b[1][1]), BigInt(proof.pi_b[1][0])],
+  ],
+  [BigInt(proof.pi_c[0]), BigInt(proof.pi_c[1])],
+  publicSignals.map(BigInt),
+];
 
-In this model:
+const { data } = await client.call({
+  to: verifierAddress,
+  data: encodeFunctionData({ abi, functionName: 'verifyProof', args }),
+  gas: 500_000n,
+});
+const valid = decodeFunctionResult({ abi, functionName: 'verifyProof', data });
+```
 
-- Proofs are validated off-chain by independent validators
-- Computation does not touch Ethereum
-- Settlement or finalization can anchor to L1
+```bash cast
+# Print the arguments in the right order with:
+#   snarkjs zkey export soliditycalldata public.json proof.json
+cast call $VERIFIER \
+  "verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[1])(bool)" \
+  "[$A0,$A1]" "[[$B01,$B00],[$B11,$B10]]" "[$C0,$C1]" "[$SIGNAL0]" \
+  --gas-limit 500000 \
+  --rpc-url $SEPOLIA_RPC_URL
+```
 
-This is designed to preserve correctness guarantees while significantly reducing execution cost.
+```solidity Solidity
+interface IGroth16Verifier {
+    function verifyProof(
+        uint256[2] calldata pA,
+        uint256[2][2] calldata pB,
+        uint256[2] calldata pC,
+        uint256[1] calldata pubSignals
+    ) external view returns (bool);
+}
 
----
+contract Gate {
+    IGroth16Verifier public immutable verifier;
 
-## Design Goals
+    constructor(IGroth16Verifier _verifier) {
+        verifier = _verifier;
+    }
 
-The system is built around a few core principles:
+    function act(
+        uint256[2] calldata pA,
+        uint256[2][2] calldata pB,
+        uint256[2] calldata pC,
+        uint256[1] calldata pubSignals
+    ) external {
+        require(verifier.verifyProof(pA, pB, pC, pubSignals), "invalid proof");
+        // ... your logic
+    }
+}
+```
 
-- ZK should be a primitive, not a specialization
-- Users define intent, not cryptographic machinery
-- Contracts must remain verifiable, deterministic, and trust-minimized
+</CodeGroup>
 
-For developers, this removes the need to build and maintain ZK infrastructure. For traders and advanced users, it enables enforceable rules without leaking information or edge.
+On-chain verification proves the math only. If a proof must not be reused, track a nullifier or other unique public signal in your own contract.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Verify a proof (API)" icon="code" href="/api-reference/zk-verification/verify-proof">
+    Request and response reference.
+  </Card>
+  <Card title="Warp Verify" icon="certificate" href="/warp-verify/overview">
+    Zero-knowledge attestations built on ZK Proofs.
+  </Card>
+</CardGroup>

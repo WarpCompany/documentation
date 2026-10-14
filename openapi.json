@@ -2,1801 +2,770 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Warp API",
-    "description": "Comprehensive API for Warp platform including organizations, projects, ZK proofs, payments, and more",
     "version": "1.0.0",
+    "description": "Public Warp API: hosted checkout sessions for Pay with Warp, hosted ZK proof verification, and Warp Verify attestation checks.",
     "contact": {
       "name": "Warp Support",
       "email": "support@usewarp.net"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
     }
   },
   "servers": [
     {
-      "url": "https://platform.usewarp.net",
-      "description": "Platform API"
+      "url": "https://api.usewarp.net",
+      "description": "Production"
     }
   ],
-  "security": [{"bearerAuth": []}],
-  "components": {
-    "securitySchemes": {
-      "bearerAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "description": "Warp Platform access token (JWT). Required for Platform API endpoints only; Checkout API endpoints do not use it."
-      }
-    },
-    "schemas": {
-      "Error": {
-        "type": "object",
-        "properties": {
-          "error": {
-            "type": "string",
-            "description": "Error message"
-          },
-          "details": {
-            "type": "array",
-            "items": {
-              "type": "object"
-            },
-            "description": "Detailed validation errors"
-          }
-        },
-        "required": ["error"]
-      },
-      "UserProfile": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "User ID"
-          },
-          "email": {
-            "type": "string",
-            "format": "email",
-            "description": "User email"
-          },
-          "first_name": {
-            "type": "string",
-            "description": "User first name"
-          },
-          "last_name": {
-            "type": "string",
-            "description": "User last name"
-          },
-          "onboarding_completed": {
-            "type": "boolean",
-            "description": "Whether user has completed onboarding"
-          },
-          "is_admin": {
-            "type": "boolean",
-            "description": "Whether user is an admin"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "User creation timestamp"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "User update timestamp"
-          }
-        },
-        "required": ["id", "email", "onboarding_completed", "is_admin", "created_at", "updated_at"]
-      },
-      "Organization": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "Organization ID"
-          },
-          "name": {
-            "type": "string",
-            "description": "Organization name"
-          },
-          "current_plan_id": {
-            "type": "string",
-            "description": "Current plan ID"
-          },
-          "owner_id": {
-            "type": "string",
-            "description": "Organization owner ID"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Organization creation timestamp"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Organization update timestamp"
-          },
-          "member_count": {
-            "type": "integer",
-            "description": "Number of members in organization"
-          },
-          "projects_count": {
-            "type": "integer",
-            "description": "Number of projects in organization"
-          },
-          "user_role": {
-            "type": "string",
-            "enum": ["admin", "member"],
-            "description": "User's role in the organization"
-          }
-        },
-        "required": ["id", "name", "created_at", "updated_at", "member_count", "projects_count", "user_role"]
-      },
-      "OrganizationMember": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "Member ID"
-          },
-          "role": {
-            "type": "string",
-            "enum": ["admin", "member"],
-            "description": "Member role"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Member creation timestamp"
-          },
-          "user": {
-            "$ref": "#/components/schemas/UserProfile"
-          }
-        },
-        "required": ["id", "role", "created_at", "user"]
-      },
-      "CreateOrganizationRequest": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100,
-            "description": "Organization name"
-          }
-        },
-        "required": ["name"]
-      },
-      "UpdateOrganizationRequest": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100,
-            "description": "Organization name"
-          }
-        },
-        "required": ["name"]
-      },
-      "AddMemberRequest": {
-        "type": "object",
-        "properties": {
-          "user_id": {
-            "type": "string",
-            "format": "uuid",
-            "description": "User ID to add as member"
-          },
-          "role": {
-            "type": "string",
-            "enum": ["admin", "member"],
-            "default": "member",
-            "description": "Role for the new member"
-          }
-        },
-        "required": ["user_id"]
-      },
-      "UpdateMemberRequest": {
-        "type": "object",
-        "properties": {
-          "role": {
-            "type": "string",
-            "enum": ["admin", "member"],
-            "description": "New role for the member"
-          }
-        },
-        "required": ["role"]
-      },
-      "Project": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "Project ID"
-          },
-          "name": {
-            "type": "string",
-            "description": "Project name"
-          },
-          "organization_id": {
-            "type": "string",
-            "description": "Organization ID"
-          },
-          "description": {
-            "type": "string",
-            "description": "Project description"
-          },
-          "receive_chain": {
-            "type": "string",
-            "description": "Blockchain network for receiving payments"
-          },
-          "receive_token": {
-            "type": "string",
-            "description": "Token for receiving payments"
-          },
-          "escrow_address_mainnet": {
-            "type": "string",
-            "description": "Escrow address for mainnet"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Project creation timestamp"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Project update timestamp"
-          }
-        },
-        "required": ["id", "name", "organization_id", "created_at", "updated_at"]
-      },
-      "CreateProjectRequest": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100,
-            "description": "Project name"
-          },
-          "organization_id": {
-            "type": "string",
-            "description": "Organization ID"
-          },
-          "description": {
-            "type": "string",
-            "description": "Project description"
-          }
-        },
-        "required": ["name", "organization_id"]
-      },
-      "UpdateProjectRequest": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100,
-            "description": "Project name"
-          },
-          "description": {
-            "type": "string",
-            "description": "Project description"
-          }
-        }
-      },
-      "DestinationSettingsRequest": {
-        "type": "object",
-        "properties": {
-          "projectId": {
-            "type": "string",
-            "description": "Project ID"
-          },
-          "receiveChain": {
-            "type": "string",
-            "enum": ["ethereum"],
-            "description": "Blockchain network"
-          },
-          "receiveToken": {
-            "type": "string",
-            "enum": ["eth"],
-            "description": "Token to receive"
-          },
-          "destinationAddress": {
-            "type": "string",
-            "pattern": "^0x[a-fA-F0-9]{40}$",
-            "description": "Ethereum address for receiving funds"
-          }
-        },
-        "required": ["projectId", "receiveChain", "receiveToken", "destinationAddress"]
-      },
-      "ZKProof": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "ZK Proof ID"
-          },
-          "name": {
-            "type": "string",
-            "description": "Proof name"
-          },
-          "project_id": {
-            "type": "string",
-            "description": "Project ID"
-          },
-          "status": {
-            "type": "string",
-            "enum": ["draft", "compiled", "verified", "deployed"],
-            "description": "Proof status"
-          },
-          "circuit_path": {
-            "type": "string",
-            "description": "Path to circuit file"
-          },
-          "verification_key": {
-            "type": "string",
-            "description": "Verification key"
-          },
-          "proving_key": {
-            "type": "string",
-            "description": "Proving key"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Creation timestamp"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Update timestamp"
-          }
-        },
-        "required": ["id", "name", "project_id", "status", "created_at", "updated_at"]
-      },
-      "CircomProject": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "Circom project ID"
-          },
-          "name": {
-            "type": "string",
-            "description": "Project name"
-          },
-          "user_id": {
-            "type": "string",
-            "description": "User ID"
-          },
-          "description": {
-            "type": "string",
-            "description": "Project description"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Creation timestamp"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Update timestamp"
-          }
-        },
-        "required": ["id", "name", "user_id", "created_at", "updated_at"]
-      },
-      "CircomFile": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "File ID"
-          },
-          "project_id": {
-            "type": "string",
-            "description": "Project ID"
-          },
-          "name": {
-            "type": "string",
-            "description": "File name"
-          },
-          "content": {
-            "type": "string",
-            "description": "File content"
-          },
-          "file_type": {
-            "type": "string",
-            "enum": ["circuit", "input", "other"],
-            "description": "File type"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Creation timestamp"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Update timestamp"
-          }
-        },
-        "required": ["id", "project_id", "name", "content", "file_type", "created_at", "updated_at"]
-      },
-      "CreatePaymentSessionRequest": {
-        "type": "object",
-        "properties": {
-          "public_key": {
-            "type": "string",
-            "pattern": "^pk_",
-            "description": "Project public key (starts with pk_)"
-          },
-          "amount_usd": {
-            "type": "number",
-            "minimum": 0,
-            "description": "Amount in USD"
-          },
-          "description": {
-            "type": "string",
-            "description": "Payment description"
-          },
-          "metadata": {
-            "type": "object",
-            "description": "Additional metadata"
-          },
-          "return_url": {
-            "type": "string",
-            "format": "uri",
-            "description": "Return URL after successful payment"
-          },
-          "cancel_url": {
-            "type": "string",
-            "format": "uri",
-            "description": "Cancel URL if payment is cancelled"
-          }
-        },
-        "required": ["public_key", "amount_usd"]
-      },
-      "PaymentSessionResponse": {
-        "type": "object",
-        "properties": {
-          "session_id": {
-            "type": "string",
-            "description": "Payment session ID"
-          },
-          "checkout_url": {
-            "type": "string",
-            "format": "uri",
-            "description": "Checkout page URL"
-          },
-          "expires_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Session expiration time"
-          }
-        },
-        "required": ["session_id", "checkout_url", "expires_at"]
-      },
-      "PricingResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "description": "Success flag"
-          },
-          "pricing": {
-            "type": "object",
-            "description": "Pricing lock data"
-          }
-        },
-        "required": ["success", "pricing"]
-      },
-      "SessionStatusResponse": {
-        "type": "object",
-        "properties": {
-          "session_id": {
-            "type": "string",
-            "description": "Session ID"
-          },
-          "status": {
-            "type": "string",
-            "enum": ["pending", "processing", "completed", "failed"],
-            "description": "Session status"
-          },
-          "verification_step": {
-            "type": "string",
-            "enum": ["pending", "confirming", "completed", "failed"],
-            "description": "Verification step"
-          },
-          "tx_hash": {
-            "type": "string",
-            "description": "Transaction hash"
-          },
-          "verified_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Verification timestamp"
-          },
-          "completed_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Completion timestamp"
-          }
-        },
-        "required": ["session_id", "status", "verification_step"]
-      },
-      "SubmitTransactionRequest": {
-        "type": "object",
-        "properties": {
-          "sessionId": {
-            "type": "string",
-            "description": "Payment session ID"
-          },
-          "txHash": {
-            "type": "string",
-            "pattern": "^0x",
-            "description": "Transaction hash"
-          },
-          "chain": {
-            "type": "string",
-            "description": "Blockchain chain"
-          },
-          "token": {
-            "type": "string",
-            "description": "Token symbol"
-          },
-          "walletAddress": {
-            "type": "string",
-            "description": "Customer wallet address"
-          },
-          "amount": {
-            "type": "string",
-            "description": "Payment amount"
-          }
-        },
-        "required": ["sessionId", "txHash", "chain", "token", "walletAddress", "amount"]
-      }
+  "security": [
+    {
+      "bearerAuth": []
     }
-  },
+  ],
+  "tags": [
+    {
+      "name": "Checkout sessions",
+      "description": "Create and track hosted checkout sessions."
+    },
+    {
+      "name": "ZK verification",
+      "description": "Verify Groth16 proofs against circuits deployed from the Warp Platform."
+    },
+    {
+      "name": "Attestations",
+      "description": "Public Warp Verify attestation checks."
+    },
+    {
+      "name": "Health",
+      "description": "Service status."
+    }
+  ],
   "paths": {
-    "/api/user/profile": {
-      "get": {
-        "summary": "Get user profile",
-        "description": "Retrieve the current user's profile information",
-        "tags": ["User"],
-        "security": [{"bearerAuth": []}],
-        "responses": {
-          "200": {
-            "description": "User profile retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "profile": {
-                      "$ref": "#/components/schemas/UserProfile"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/organizations": {
-      "get": {
-        "summary": "List organizations",
-        "description": "Retrieve all organizations the current user is a member of",
-        "tags": ["Organizations"],
-        "security": [{"bearerAuth": []}],
-        "responses": {
-          "200": {
-            "description": "Organizations retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "organizations": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Organization"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
+    "/v1/checkout/sessions": {
       "post": {
-        "summary": "Create organization",
-        "description": "Create a new organization",
-        "tags": ["Organizations"],
-        "security": [{"bearerAuth": []}],
+        "tags": [
+          "Checkout sessions"
+        ],
+        "operationId": "createCheckoutSession",
+        "summary": "Create a checkout session",
+        "description": "Creates a hosted checkout session. Call this from your server with a secret key. The network (mainnet or testnet) is determined by the key: `sk_live_` keys create mainnet sessions, `sk_test_` keys create testnet sessions. Sessions expire 30 minutes after creation.",
+        "x-mint": {
+          "href": "/api-reference/checkout-sessions/create"
+        },
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateOrganizationRequest"
+                "$ref": "#/components/schemas/CheckoutSessionCreateRequest"
+              },
+              "example": {
+                "amount_usd": 49.99,
+                "description": "Order #1234",
+                "metadata": {
+                  "order_id": "1234"
+                },
+                "return_url": "https://example.com/orders/1234",
+                "cancel_url": "https://example.com/cart"
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Organization created successfully",
+            "description": "Session created",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "organization": {
-                      "$ref": "#/components/schemas/Organization"
-                    }
-                  }
+                  "$ref": "#/components/schemas/CheckoutSession"
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid request data",
+            "description": "Invalid request",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/organizations/{id}": {
-      "get": {
-        "summary": "Get organization",
-        "description": "Retrieve a specific organization by ID",
-        "tags": ["Organizations"],
-        "security": [{"bearerAuth": []}],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Organization ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Organization retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "organization": {
-                      "$ref": "#/components/schemas/Organization"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Access denied",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Organization not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "summary": "Update organization",
-        "description": "Update an organization's details",
-        "tags": ["Organizations"],
-        "security": [{"bearerAuth": []}],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Organization ID"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateOrganizationRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Organization updated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "organization": {
-                      "$ref": "#/components/schemas/Organization"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request data",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Access denied - only admins can update",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Organization not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "summary": "Delete organization",
-        "description": "Delete an organization",
-        "tags": ["Organizations"],
-        "security": [{"bearerAuth": []}],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Organization ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Organization deleted successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Organization deleted successfully"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Access denied - only admins can delete",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Organization not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/organizations/{id}/members": {
-      "get": {
-        "summary": "List organization members",
-        "description": "Retrieve all members of an organization",
-        "tags": ["Organizations"],
-        "security": [{"bearerAuth": []}],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Organization ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Members retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "members": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/OrganizationMember"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Access denied",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "summary": "Add organization member",
-        "description": "Add a new member to an organization",
-        "tags": ["Organizations"],
-        "security": [{"bearerAuth": []}],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Organization ID"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AddMemberRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Member added successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "member": {
-                      "$ref": "#/components/schemas/OrganizationMember"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request data or user already a member",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Access denied - only admins can add members",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/organizations/{id}/members/{memberId}": {
-      "patch": {
-        "summary": "Update member role",
-        "description": "Update a member's role in an organization",
-        "tags": ["Organizations"],
-        "security": [{"bearerAuth": []}],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Organization ID"
-          },
-          {
-            "name": "memberId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Member ID"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateMemberRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Member role updated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "member": {
-                      "$ref": "#/components/schemas/OrganizationMember"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request data",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Access denied - only admins can update roles",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "summary": "Remove organization member",
-        "description": "Remove a member from an organization",
-        "tags": ["Organizations"],
-        "security": [{"bearerAuth": []}],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Organization ID"
-          },
-          {
-            "name": "memberId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Member ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Member removed successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Member removed successfully"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Cannot remove the last admin",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Access denied - only admins can remove members",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/zk-proofs": {
-      "get": {
-        "summary": "List ZK proofs",
-        "description": "Retrieve all ZK proofs for the current user",
-        "tags": ["ZK Proofs"],
-        "security": [{"bearerAuth": []}],
-        "responses": {
-          "200": {
-            "description": "ZK proofs retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "proofs": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/ZKProof"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "summary": "Create ZK proof",
-        "description": "Create a new ZK proof",
-        "tags": ["ZK Proofs"],
-        "security": [{"bearerAuth": []}],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "description": "Proof name"
-                  },
-                  "project_id": {
-                    "type": "string",
-                    "description": "Project ID"
-                  },
-                  "circuit_path": {
-                    "type": "string",
-                    "description": "Path to circuit file"
-                  }
                 },
-                "required": ["name", "project_id"]
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "ZK proof created successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "proof": {
-                      "$ref": "#/components/schemas/ZKProof"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request data",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/zk-proofs/{id}": {
-      "get": {
-        "summary": "Get ZK proof",
-        "description": "Retrieve a specific ZK proof by ID",
-        "tags": ["ZK Proofs"],
-        "security": [{"bearerAuth": []}],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "ZK proof ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "ZK proof retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "proof": {
-                      "$ref": "#/components/schemas/ZKProof"
-                    }
+                "example": {
+                  "error": {
+                    "code": "invalid_request",
+                    "message": "amount_usd: Number must be greater than 0"
                   }
                 }
               }
             }
           },
           "401": {
-            "description": "Unauthorized",
+            "description": "Missing or invalid secret key",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "unauthorized",
+                    "message": "Invalid API key"
+                  }
                 }
               }
             }
           },
-          "404": {
-            "description": "ZK proof not found",
+          "429": {
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "rate_limited",
+                    "message": "Too many requests. Retry after the window resets."
+                  }
                 }
               }
             }
           }
         }
       },
-      "patch": {
-        "summary": "Update ZK proof",
-        "description": "Update a ZK proof's details",
-        "tags": ["ZK Proofs"],
-        "security": [{"bearerAuth": []}],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "ZK proof ID"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "description": "Proof name"
-                  },
-                  "status": {
-                    "type": "string",
-                    "enum": ["draft", "compiled", "verified", "deployed"],
-                    "description": "Proof status"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "ZK proof updated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "proof": {
-                      "$ref": "#/components/schemas/ZKProof"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request data",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "ZK proof not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "summary": "Delete ZK proof",
-        "description": "Delete a ZK proof",
-        "tags": ["ZK Proofs"],
-        "security": [{"bearerAuth": []}],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "ZK proof ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "ZK proof deleted successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "ZK proof deleted successfully"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "ZK proof not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/zk-proofs/{id}/compile": {
-      "post": {
-        "summary": "Compile ZK proof",
-        "description": "Compile a ZK proof circuit",
-        "tags": ["ZK Proofs"],
-        "security": [{"bearerAuth": []}],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "ZK proof ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "ZK proof compilation started",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Compilation started"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "ZK proof not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/zk-proofs/{id}/verify": {
-      "post": {
-        "summary": "Verify ZK proof",
-        "description": "Verify a ZK proof",
-        "tags": ["ZK Proofs"],
-        "security": [{"bearerAuth": []}],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "ZK proof ID"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "proof": {
-                    "type": "string",
-                    "description": "The proof data"
-                  },
-                  "publicSignals": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    },
-                    "description": "Public signals"
-                  }
-                },
-                "required": ["proof", "publicSignals"]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "ZK proof verified successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "verified": {
-                      "type": "boolean",
-                      "example": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid proof data",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/zk-proofs/{id}/files": {
       "get": {
-        "summary": "List ZK proof files",
-        "description": "Retrieve all files associated with a ZK proof",
-        "tags": ["ZK Proofs"],
-        "security": [{"bearerAuth": []}],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "ZK proof ID"
-          }
+        "tags": [
+          "Checkout sessions"
         ],
-        "responses": {
-          "200": {
-            "description": "Files retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "files": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "description": "File object"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/zk-proofs/deploy": {
-      "post": {
-        "summary": "Deploy ZK proof contract",
-        "description": "Deploy a ZK proof verification contract",
-        "tags": ["ZK Proofs"],
-        "security": [{"bearerAuth": []}],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "proofId": {
-                    "type": "string",
-                    "description": "ZK proof ID"
-                  },
-                  "network": {
-                    "type": "string",
-                    "description": "Target network"
-                  }
-                },
-                "required": ["proofId"]
-              }
-            }
-          }
+        "operationId": "listCheckoutSessions",
+        "summary": "List checkout sessions",
+        "description": "Lists your project's checkout sessions. Use `starting_after` with the last `id` from the previous page to paginate.",
+        "x-mint": {
+          "href": "/api-reference/checkout-sessions/list"
         },
-        "responses": {
-          "200": {
-            "description": "Contract deployment started",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "deploymentId": {
-                      "type": "string",
-                      "description": "Deployment ID"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request data",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/zk-proofs/check-deployment": {
-      "get": {
-        "summary": "Check deployment status",
-        "description": "Check the status of a contract deployment",
-        "tags": ["ZK Proofs"],
-        "security": [{"bearerAuth": []}],
         "parameters": [
           {
-            "name": "deploymentId",
+            "name": "status",
             "in": "query",
-            "required": true,
+            "required": false,
+            "description": "Only return sessions with this status.",
+            "schema": {
+              "$ref": "#/components/schemas/CheckoutSessionStatus"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Number of sessions to return (1-100).",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "starting_after",
+            "in": "query",
+            "required": false,
+            "description": "Cursor for pagination: the `id` of the last session from the previous page.",
             "schema": {
               "type": "string"
-            },
-            "description": "Deployment ID"
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Deployment status retrieved",
+            "description": "A page of sessions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSessionList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "invalid_request",
+                    "message": "amount_usd: Number must be greater than 0"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid secret key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "unauthorized",
+                    "message": "Invalid API key"
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "rate_limited",
+                    "message": "Too many requests. Retry after the window resets."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/checkout/sessions/{id}": {
+      "get": {
+        "tags": [
+          "Checkout sessions"
+        ],
+        "operationId": "retrieveCheckoutSession",
+        "summary": "Retrieve a checkout session",
+        "description": "Retrieves a session owned by your project. Includes `payment` once a payment transaction has been detected.",
+        "x-mint": {
+          "href": "/api-reference/checkout-sessions/retrieve"
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Session ID (`ps_...`).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSession"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid secret key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "unauthorized",
+                    "message": "Invalid API key"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or owned by another project)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "not_found",
+                    "message": "Resource not found"
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "rate_limited",
+                    "message": "Too many requests. Retry after the window resets."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/zk/proofs/{proofId}/nonces": {
+      "post": {
+        "tags": [
+          "ZK verification"
+        ],
+        "operationId": "createZkNonce",
+        "summary": "Create a verification nonce",
+        "description": "Issues a single-use nonce that expires after 10 minutes. Pass it to the verify endpoint to prevent replay of a verification request.",
+        "x-mint": {
+          "href": "/api-reference/zk-verification/create-nonce"
+        },
+        "parameters": [
+          {
+            "name": "proofId",
+            "in": "path",
+            "required": true,
+            "description": "ZK proof ID from the Warp Platform.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Nonce created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZkNonce"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid secret key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "unauthorized",
+                    "message": "Invalid API key"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or owned by another project)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "not_found",
+                    "message": "Resource not found"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The proof has no verification key yet (`proof_not_ready`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "rate_limited",
+                    "message": "Too many requests. Retry after the window resets."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/zk/proofs/{proofId}/verify": {
+      "post": {
+        "tags": [
+          "ZK verification"
+        ],
+        "operationId": "verifyZkProof",
+        "summary": "Verify a proof",
+        "description": "Verifies a Groth16 proof off-chain against the proof's stored verification key. With `onchain: true`, also calls `verifyProof` on the proof's deployed verifier contract (allow-listed chains only). Returns a signed receipt (compact JWS, EdDSA) that you can verify with the keys from the JWKS endpoint. Only the owning project's secret key can verify its proofs.",
+        "x-mint": {
+          "href": "/api-reference/zk-verification/verify-proof"
+        },
+        "parameters": [
+          {
+            "name": "proofId",
+            "in": "path",
+            "required": true,
+            "description": "ZK proof ID from the Warp Platform.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ZkVerifyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verification result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZkVerifyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "invalid_request",
+                    "message": "amount_usd: Number must be greater than 0"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid secret key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "unauthorized",
+                    "message": "Invalid API key"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or owned by another project)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "not_found",
+                    "message": "Resource not found"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The proof has no verification key yet (`proof_not_ready`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "rate_limited",
+                    "message": "Too many requests. Retry after the window resets."
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "On-chain verification was requested but the chain RPC did not respond (`onchain_unavailable`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/zk/proofs/{proofId}/interface": {
+      "get": {
+        "tags": [
+          "ZK verification"
+        ],
+        "operationId": "getZkInterface",
+        "summary": "Get the verifier interface",
+        "description": "Returns the deployed verifier's address, chain, ABI and ready-made snippets (cURL, viem, cast, Solidity) for calling it.",
+        "x-mint": {
+          "href": "/api-reference/zk-verification/get-interface"
+        },
+        "parameters": [
+          {
+            "name": "proofId",
+            "in": "path",
+            "required": true,
+            "description": "ZK proof ID from the Warp Platform.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verifier interface",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZkInterface"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid secret key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "unauthorized",
+                    "message": "Invalid API key"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or owned by another project)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "not_found",
+                    "message": "Resource not found"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The proof has not been compiled or deployed yet (`proof_not_ready`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "rate_limited",
+                    "message": "Too many requests. Retry after the window resets."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/.well-known/jwks.json": {
+      "get": {
+        "tags": [
+          "ZK verification"
+        ],
+        "operationId": "getJwks",
+        "summary": "Get receipt signing keys",
+        "description": "Public JSON Web Key Set used to verify verification receipts. No authentication required.",
+        "x-mint": {
+          "href": "/api-reference/zk-verification/jwks"
+        },
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "JSON Web Key Set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Jwks"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "rate_limited",
+                    "message": "Too many requests. Retry after the window resets."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/attestations/{id}": {
+      "get": {
+        "tags": [
+          "Attestations"
+        ],
+        "operationId": "getAttestation",
+        "summary": "Check an attestation",
+        "description": "Public check of a Warp Verify attestation. No authentication required; rate limited per IP. `valid` is `true` only when a real proof was recorded for the attestation.",
+        "x-mint": {
+          "href": "/api-reference/attestations/check"
+        },
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Attestation ID.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Attestation status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attestation"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or owned by another project)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "not_found",
+                    "message": "Resource not found"
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "rate_limited",
+                    "message": "Too many requests. Retry after the window resets."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "operationId": "getHealth",
+        "summary": "Health check",
+        "description": "Returns `200` when the API is up.",
+        "x-mint": {
+          "href": "/api-reference/health"
+        },
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
             "content": {
               "application/json": {
                 "schema": {
@@ -1804,839 +773,499 @@
                   "properties": {
                     "status": {
                       "type": "string",
-                      "enum": ["pending", "completed", "failed"],
-                      "description": "Deployment status"
-                    },
-                    "contractAddress": {
-                      "type": "string",
-                      "description": "Deployed contract address"
+                      "example": "ok"
                     }
                   }
                 }
               }
             }
           },
-          "401": {
-            "description": "Unauthorized",
+          "429": {
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/circom-projects": {
-      "get": {
-        "summary": "List Circom projects",
-        "description": "Retrieve all Circom projects for the current user",
-        "tags": ["Circom"],
-        "security": [{"bearerAuth": []}],
-        "responses": {
-          "200": {
-            "description": "Circom projects retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "projects": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/CircomProject"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "summary": "Create Circom project",
-        "description": "Create a new Circom project",
-        "tags": ["Circom"],
-        "security": [{"bearerAuth": []}],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "description": "Project name"
-                  },
-                  "description": {
-                    "type": "string",
-                    "description": "Project description"
-                  }
                 },
-                "required": ["name"]
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Circom project created successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "project": {
-                      "$ref": "#/components/schemas/CircomProject"
-                    }
+                "example": {
+                  "error": {
+                    "code": "rate_limited",
+                    "message": "Too many requests. Retry after the window resets."
                   }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request data",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
           }
         }
       }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Your project secret key: `sk_test_...` (testnet) or `sk_live_...` (mainnet). Use it only on your server."
+      }
     },
-    "/api/circom-files": {
-      "get": {
-        "summary": "List Circom files",
-        "description": "Retrieve all Circom files for the current user",
-        "tags": ["Circom"],
-        "security": [{"bearerAuth": []}],
-        "responses": {
-          "200": {
-            "description": "Circom files retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "files": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/CircomFile"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Machine-readable error code: `invalid_request`, `unauthorized`, `not_found`, `proof_not_ready`, `onchain_unavailable`, `rate_limited` or `internal_error`.",
+                "example": "invalid_request"
+              },
+              "message": {
+                "type": "string",
+                "description": "Human-readable description."
               }
             }
           }
         }
       },
-      "post": {
-        "summary": "Create Circom file",
-        "description": "Create a new Circom file",
-        "tags": ["Circom"],
-        "security": [{"bearerAuth": []}],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
+      "CheckoutSessionStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "processing",
+          "completed",
+          "failed",
+          "expired"
+        ],
+        "description": "`pending`: waiting for payment. `processing`: a transaction was submitted and is being verified. `completed`: payment verified. `failed`: verification failed. `expired`: no payment within 30 minutes."
+      },
+      "CheckoutSessionCreateRequest": {
+        "type": "object",
+        "required": [
+          "amount_usd"
+        ],
+        "properties": {
+          "amount_usd": {
+            "type": "number",
+            "minimum": 0.01,
+            "multipleOf": 0.01,
+            "description": "Amount to charge in USD. Greater than 0, at most 2 decimal places.",
+            "example": 49.99
+          },
+          "description": {
+            "type": "string",
+            "description": "Shown to the customer on the checkout page."
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Your own key-value data, returned on the session and in webhooks."
+          },
+          "return_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Where the \"Back to merchant\" button on the payment success page sends the customer."
+          },
+          "cancel_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Where the \"Cancel and return\" link on the checkout page sends the customer."
+          }
+        }
+      },
+      "Payment": {
+        "type": "object",
+        "description": "The on-chain payment for a session.",
+        "properties": {
+          "chain": {
+            "type": "string",
+            "description": "Network the customer paid on.",
+            "example": "base"
+          },
+          "token": {
+            "type": "string",
+            "description": "Token the customer paid with. You receive this token; there is no conversion.",
+            "example": "USDC"
+          },
+          "tx_hash": {
+            "type": "string",
+            "description": "Transaction hash (lowercase).",
+            "example": "0x5f2c..."
+          },
+          "amount": {
+            "type": "string",
+            "description": "Token amount paid, as a decimal string.",
+            "example": "49.99"
+          },
+          "confirmations": {
+            "type": "integer",
+            "description": "Block confirmations observed."
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "CheckoutSession": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "ps_8f14e45fceea167a5a36dedd4bea2543"
+          },
+          "object": {
+            "type": "string",
+            "enum": [
+              "checkout.session"
+            ]
+          },
+          "amount_usd": {
+            "type": "string",
+            "description": "Amount in USD as a decimal string.",
+            "example": "49.99"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "USD"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "metadata": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/CheckoutSessionStatus"
+          },
+          "network": {
+            "type": "string",
+            "enum": [
+              "mainnet",
+              "testnet"
+            ],
+            "description": "Determined by the secret key used to create the session."
+          },
+          "return_url": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancel_url": {
+            "type": "string",
+            "nullable": true
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "30 minutes after creation."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "checkout_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Hosted checkout page to redirect the customer to.",
+            "example": "https://checkout.usewarp.net/session/ps_8f14e45fceea167a5a36dedd4bea2543"
+          },
+          "payment": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Payment"
+              }
+            ],
+            "nullable": true,
+            "description": "Present on retrieve once a payment has been detected."
+          }
+        }
+      },
+      "CheckoutSessionList": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "enum": [
+              "list"
+            ]
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CheckoutSession"
+            }
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ZkNonce": {
+        "type": "object",
+        "properties": {
+          "nonce": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "10 minutes after creation. Single use."
+          }
+        }
+      },
+      "Groth16Proof": {
+        "type": "object",
+        "required": [
+          "pi_a",
+          "pi_b",
+          "pi_c"
+        ],
+        "description": "Proof object as produced by snarkjs `groth16.fullProve`.",
+        "properties": {
+          "pi_a": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "pi_b": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "pi_c": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "protocol": {
+            "type": "string",
+            "enum": [
+              "groth16"
+            ]
+          },
+          "curve": {
+            "type": "string",
+            "enum": [
+              "bn128"
+            ]
+          }
+        }
+      },
+      "ZkVerifyRequest": {
+        "type": "object",
+        "required": [
+          "proof",
+          "public_signals"
+        ],
+        "properties": {
+          "proof": {
+            "$ref": "#/components/schemas/Groth16Proof"
+          },
+          "public_signals": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Public signals as decimal strings. The count must match the circuit and each value must be below the BN254 scalar field modulus."
+          },
+          "nonce": {
+            "type": "string",
+            "description": "Optional nonce from the create-nonce endpoint."
+          },
+          "onchain": {
+            "type": "boolean",
+            "default": false,
+            "description": "Also call `verifyProof` on the deployed verifier contract."
+          }
+        }
+      },
+      "ZkVerifyResponse": {
+        "type": "object",
+        "properties": {
+          "valid": {
+            "type": "boolean"
+          },
+          "proof_id": {
+            "type": "string"
+          },
+          "checks": {
+            "type": "object",
+            "properties": {
+              "offchain": {
+                "type": "boolean"
+              },
+              "onchain": {
                 "type": "object",
                 "properties": {
-                  "project_id": {
-                    "type": "string",
-                    "description": "Project ID"
+                  "chain_id": {
+                    "type": "integer"
                   },
-                  "name": {
-                    "type": "string",
-                    "description": "File name"
+                  "contract_address": {
+                    "type": "string"
                   },
-                  "content": {
-                    "type": "string",
-                    "description": "File content"
-                  },
-                  "file_type": {
-                    "type": "string",
-                    "enum": ["circuit", "input", "other"],
-                    "description": "File type"
+                  "result": {
+                    "type": "boolean"
                   }
+                }
+              },
+              "nonce": {
+                "type": "string",
+                "enum": [
+                  "ok",
+                  "missing",
+                  "used",
+                  "expired"
+                ]
+              },
+              "policy": {
+                "type": "string",
+                "enum": [
+                  "ok",
+                  "mismatch",
+                  "n/a"
+                ]
+              }
+            }
+          },
+          "verified_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "receipt": {
+            "type": "string",
+            "description": "Compact JWS (EdDSA, Ed25519) over `{ proof_id, public_signals, valid, verified_at, chain_id? }`. Verify it with the JWKS endpoint."
+          }
+        }
+      },
+      "ZkInterface": {
+        "type": "object",
+        "properties": {
+          "contract_address": {
+            "type": "string"
+          },
+          "chain_id": {
+            "type": "integer"
+          },
+          "network": {
+            "type": "string"
+          },
+          "abi": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "public_signal_count": {
+            "type": "integer"
+          },
+          "snippets": {
+            "type": "object",
+            "properties": {
+              "curl": {
+                "type": "string"
+              },
+              "viem": {
+                "type": "string"
+              },
+              "cast": {
+                "type": "string"
+              },
+              "solidity": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Jwks": {
+        "type": "object",
+        "properties": {
+          "keys": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kty": {
+                  "type": "string",
+                  "example": "OKP"
                 },
-                "required": ["project_id", "name", "content", "file_type"]
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Circom file created successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "file": {
-                      "$ref": "#/components/schemas/CircomFile"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request data",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "summary": "Update Circom files",
-        "description": "Update multiple Circom files",
-        "tags": ["Circom"],
-        "security": [{"bearerAuth": []}],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "files": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "description": "File ID"
-                        },
-                        "content": {
-                          "type": "string",
-                          "description": "Updated content"
-                        }
-                      },
-                      "required": ["id", "content"]
-                    },
-                    "description": "Array of files to update"
-                  }
+                "crv": {
+                  "type": "string",
+                  "example": "Ed25519"
                 },
-                "required": ["files"]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Circom files updated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Files updated successfully"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request data",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/circom-files/{id}": {
-      "patch": {
-        "summary": "Update Circom file",
-        "description": "Update a specific Circom file",
-        "tags": ["Circom"],
-        "security": [{"bearerAuth": []}],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "File ID"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "content": {
-                    "type": "string",
-                    "description": "Updated file content"
-                  },
-                  "name": {
-                    "type": "string",
-                    "description": "Updated file name"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Circom file updated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "file": {
-                      "$ref": "#/components/schemas/CircomFile"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request data",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "File not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "summary": "Delete Circom file",
-        "description": "Delete a Circom file",
-        "tags": ["Circom"],
-        "security": [{"bearerAuth": []}],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "File ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Circom file deleted successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "File deleted successfully"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "File not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/circom-compilations": {
-      "post": {
-        "summary": "Compile Circom circuit",
-        "description": "Compile a Circom circuit",
-        "tags": ["Circom"],
-        "security": [{"bearerAuth": []}],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "project_id": {
-                    "type": "string",
-                    "description": "Project ID"
-                  },
-                  "circuit_file_id": {
-                    "type": "string",
-                    "description": "Circuit file ID"
-                  },
-                  "input_file_id": {
-                    "type": "string",
-                    "description": "Input file ID"
-                  }
+                "x": {
+                  "type": "string"
                 },
-                "required": ["project_id", "circuit_file_id"]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Compilation started successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "compilation_id": {
-                      "type": "string",
-                      "description": "Compilation ID"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request data",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
+                "kid": {
+                  "type": "string"
+                },
+                "alg": {
+                  "type": "string",
+                  "example": "EdDSA"
+                },
+                "use": {
+                  "type": "string",
+                  "example": "sig"
                 }
               }
             }
           }
         }
-      }
-    },
-    "/pricing": {
-      "servers": [
-        {
-          "url": "https://checkout.usewarp.net/api",
-          "description": "Checkout API"
-        }
-      ],
-      "get": {
-        "summary": "Get pricing information",
-        "description": "Get real-time pricing with 1-minute lock for payment verification",
-        "tags": ["Checkout API"],
-        "parameters": [
-          {
-            "name": "session_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Payment session ID"
-          },
-          {
-            "name": "token",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Token symbol (e.g., ETH, USDC)"
-          },
-          {
-            "name": "chain",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Blockchain chain (e.g., ethereum, polygon)"
-          },
-          {
-            "name": "network",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "enum": ["mainnet", "testnet"],
-              "default": "testnet"
-            },
-            "description": "Network type"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Pricing information retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PricingResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Missing or invalid parameters",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
-        "security": []
-      }
-    },
-    "/sessions": {
-      "servers": [
-        {
-          "url": "https://checkout.usewarp.net/api",
-          "description": "Checkout API"
-        }
-      ],
-      "post": {
-        "summary": "Create payment session",
-        "description": "Create a new payment session for checkout. No Authorization header is required: authenticate with your project public key in the `public_key` field. Use a `pk_test_` key for testnets and a `pk_live_` key for mainnet.",
-        "tags": ["Checkout API"],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreatePaymentSessionRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Payment session created successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaymentSessionResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request data",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Failed to create session",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
-        "security": []
       },
-      "get": {
-        "summary": "Get payment session",
-        "description": "Retrieve payment session details by session ID",
-        "tags": ["Checkout API"],
-        "parameters": [
-          {
-            "name": "session_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Payment session ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Payment session retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "session": {
-                      "type": "object",
-                      "description": "Payment session object"
-                    }
-                  }
-                }
-              }
-            }
+      "Attestation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
           },
-          "400": {
-            "description": "Missing session_id parameter",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
+          "status": {
+            "type": "string",
+            "description": "Lifecycle status, for example `active`, `revoked` or `expired`."
           },
-          "404": {
-            "description": "Session not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
+          "type": {
+            "type": "string",
+            "enum": [
+              "ownership",
+              "compliance",
+              "provenance"
+            ]
+          },
+          "valid": {
+            "type": "boolean",
+            "description": "`true` only when a real proof was recorded and the attestation is current."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "chain_id": {
+            "type": "integer"
+          },
+          "registry_address": {
+            "type": "string"
           }
-        },
-        "security": []
-      }
-    },
-    "/status/{sessionId}": {
-      "servers": [
-        {
-          "url": "https://checkout.usewarp.net/api",
-          "description": "Checkout API"
         }
-      ],
-      "get": {
-        "summary": "Get session status",
-        "description": "Get the current status of a payment session for frontend polling",
-        "tags": ["Checkout API"],
-        "parameters": [
-          {
-            "name": "sessionId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Payment session ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Session status retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SessionStatusResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Session not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
-        "security": []
-      }
-    },
-    "/submit-transaction": {
-      "servers": [
-        {
-          "url": "https://checkout.usewarp.net/api",
-          "description": "Checkout API"
-        }
-      ],
-      "post": {
-        "summary": "Submit transaction",
-        "description": "Submit a blockchain transaction hash for payment verification",
-        "tags": ["Checkout API"],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SubmitTransactionRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Transaction submitted successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Transaction submitted successfully"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request data",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Failed to submit transaction",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
-        "security": []
       }
     }
   }

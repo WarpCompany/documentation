@@ -1,0 +1,98 @@
+---
+title: "Warp API introduction"
+sidebarTitle: "Introduction"
+description: "Base URL, authentication with secret keys, test and live mode, errors, rate limits and webhooks for the Warp API."
+icon: "book"
+---
+
+The Warp API is a REST API for creating checkout sessions, verifying ZK proofs and checking Warp Verify attestations. Requests and responses use JSON.
+
+## Base URL
+
+```text
+https://api.usewarp.net
+```
+
+All endpoints are versioned under `/v1`, for example `POST https://api.usewarp.net/v1/checkout/sessions`.
+
+## Authentication
+
+Authenticate with your project's secret key in the `Authorization` header:
+
+```bash
+curl https://api.usewarp.net/v1/checkout/sessions \
+  -H "Authorization: Bearer sk_test_..."
+```
+
+<Warning>
+  Secret keys grant full API access to your project. Use them only on your server — never in browser code, mobile apps or public repositories. Publishable keys (`pk_...`) are not accepted by the API.
+</Warning>
+
+Secret keys are shown once, when you create a project or rotate its keys in the [Warp Platform](https://platform.usewarp.net). Warp stores only a hash, so a lost key must be rotated.
+
+The [attestation check](/api-reference/attestations/check), [JWKS](/api-reference/zk-verification/jwks) and [health](/api-reference/health) endpoints are public and need no key.
+
+## Test and live keys
+
+| Key prefix | Network | Use it for |
+| --- | --- | --- |
+| `sk_test_` | `testnet` | Development and testing on Sepolia, Polygon Amoy, Base Sepolia, Arbitrum Sepolia and Optimism Sepolia |
+| `sk_live_` | `mainnet` | Real payments on Ethereum, Polygon, Base, Arbitrum and Optimism |
+
+The network is determined by the key. There is no separate test base URL and no `network` parameter.
+
+## Errors
+
+Warp uses standard HTTP status codes. Error responses have this shape:
+
+```json
+{
+  "error": {
+    "code": "invalid_request",
+    "message": "amount_usd: Number must be greater than 0"
+  }
+}
+```
+
+| Status | `code` | Meaning |
+| --- | --- | --- |
+| `400` | `invalid_request` | The request body or parameters are invalid. `message` names the field. |
+| `401` | `unauthorized` | The secret key is missing, malformed or not recognized. |
+| `404` | `not_found` | The object doesn't exist or belongs to another project. |
+| `409` | `proof_not_ready` | The ZK proof has no verification key or deployment yet. |
+| `429` | `rate_limited` | Too many requests. Wait and retry. |
+| `500` | `internal_error` | Something went wrong on Warp's side. Retry with backoff and include the `X-Request-Id` header when contacting support. |
+| `502` | `onchain_unavailable` | On-chain verification was requested but the chain RPC did not respond. Retry, or verify off-chain only. |
+
+Branch on the HTTP status and `code`. The `message` text can change.
+
+## Rate limits
+
+Requests are rate limited per secret key and per IP address; public endpoints are limited per IP. When you exceed a limit, the API returns `429` with `code: "rate_limited"`. Responses include the standard `RateLimit` and `RateLimit-Policy` headers so you can see your remaining quota. Back off and retry after the window resets.
+
+## Idempotency
+
+Write endpoints don't accept an idempotency key. To avoid duplicate checkout sessions when a request times out, store the session `id` with your order and reuse the existing session if it is still `pending` instead of creating a new one.
+
+Webhook deliveries can repeat. Deduplicate them by event ID — see [Webhooks](/warp-pay/webhooks).
+
+## Pagination
+
+List endpoints return `{ "object": "list", "data": [...], "has_more": true }`. Pass the `id` of the last item as `starting_after` to fetch the next page, and set `limit` (1-100, default 20) to control the page size.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Create a checkout session" icon="credit-card" href="/api-reference/checkout-sessions/create">
+    Start a hosted checkout.
+  </Card>
+  <Card title="Webhooks" icon="bell" href="/warp-pay/webhooks">
+    Events, signatures and retries.
+  </Card>
+  <Card title="Verify a proof" icon="shield-check" href="/api-reference/zk-verification/verify-proof">
+    Hosted Groth16 verification with signed receipts.
+  </Card>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Take a test payment end to end.
+  </Card>
+</CardGroup>

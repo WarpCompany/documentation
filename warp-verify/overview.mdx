@@ -1,0 +1,72 @@
+---
+title: "Warp Verify attestations"
+sidebarTitle: "Warp Verify"
+description: "Issue zero-knowledge attestations for ownership, compliance and provenance, and check them with a public endpoint."
+icon: "certificate"
+---
+
+<Note>
+  **Beta.** Warp Verify is in beta. Attestations are recorded on testnets, and interfaces may change before general availability.
+</Note>
+
+Warp Verify issues attestations: signed, on-chain-recorded statements that a claim about an asset is true, backed by a zero-knowledge proof. A verifier can confirm the claim without seeing the private data behind it.
+
+## Attestation types
+
+| Type | Proves | Example |
+| --- | --- | --- |
+| `ownership` | The holder controls or owns an asset | A company owns a property without revealing the deed |
+| `compliance` | An asset or holder meets a policy | An invoice is within an approved limit without revealing the amount |
+| `provenance` | An asset's origin or history | A carbon credit comes from a registered project |
+
+Attestations can describe real-world assets such as real estate, invoices and receivables, equity, commodities, carbon credits and intellectual property.
+
+## Lifecycle
+
+<Steps>
+  <Step title="Create">
+    In the [Warp Platform](https://platform.usewarp.net), open your project's **Warp Verify** section, choose a type and describe the asset and policy.
+  </Step>
+  <Step title="Prove and attest">
+    Warp compiles the circuit, generates the proof and records the attestation in an on-chain registry. The attestation becomes `active`.
+  </Step>
+  <Step title="Share and check">
+    Share the attestation ID or its public check page (`https://platform.usewarp.net/verify/check/<id>`). Anyone can check it with the API below.
+  </Step>
+  <Step title="Renew or revoke">
+    Attestations can expire. Renew them before they lapse, or revoke them if the claim no longer holds.
+  </Step>
+</Steps>
+
+## Check an attestation
+
+[Check an attestation](/api-reference/attestations/check) is public: it needs no API key and is rate limited per IP.
+
+```bash
+curl https://api.usewarp.net/v1/attestations/$ATTESTATION_ID
+```
+
+```json
+{
+  "id": "0b6a...",
+  "status": "active",
+  "type": "ownership",
+  "valid": true,
+  "expires_at": "2027-10-14T00:00:00.000Z",
+  "chain_id": 84532,
+  "registry_address": "0x..."
+}
+```
+
+`valid` is `true` only when a real proof was recorded for the attestation. Treat `valid: false`, or a `status` such as `revoked` or `expired`, as a failed check.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="ZK Proofs" icon="shield-check" href="/zkproofs/introduction">
+    Build and verify your own circuits.
+  </Card>
+  <Card title="Check an attestation (API)" icon="code" href="/api-reference/attestations/check">
+    Response reference.
+  </Card>
+</CardGroup>

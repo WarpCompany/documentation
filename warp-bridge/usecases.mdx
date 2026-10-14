@@ -1,60 +1,35 @@
 ---
-title: "Use Cases"
-description: "Warp Bridge is designed to offer API, widget, and smart contract integrations for cross-chain transfers."
+title: "Warp Bridge integration options"
+sidebarTitle: "Integration options"
+description: "The planned ways to integrate Warp Bridge: a REST API, an embeddable widget and direct contract calls."
+icon: "lightbulb"
 ---
 
-## Integration Overview
-
-Warp Bridge is designed to offer several integration paths depending on your product’s needs. Whether you’re building a wallet, dApp, exchange, or backend service, you will be able to integrate Warp Bridge through our **API**, **widget**, or **smart contracts**.
-
 <Note>
-  The integration paths below are **Coming Soon**. Warp Bridge is under active development, and details may change before launch.
+  **Roadmap.** Warp Bridge is a design proposal and is not yet available. This page describes planned behavior, which may change.
 </Note>
 
-Below is a streamlined overview of each option.
+Warp Bridge is planned to offer three integration paths. Each would suit a different kind of product.
 
-## Warp Bridge API
+## Bridge API
 
-**Recommended for most production integrations**
+A REST API for quoting transfers, submitting them and tracking their status. It would suit teams that want full control over the UI — wallets, swap aggregators, trading bots and backend services.
 
-The API is designed to be the most flexible way to add cross-chain transfers. It abstracts routing, pricing, execution, and multi-chain infrastructure so you can focus on user experience.
+## Bridge widget
 
-With simple REST endpoints, you will be able to quote transfers, submit them, track status, and manage lifecycle events.
+An embeddable component, added with an iframe or a script tag, that handles wallet connection, quotes and execution. It would suit teams that want cross-chain transfers with little engineering work — dashboards, token pages and prototypes.
 
-<Card title="Best for teams that need:" icon="code" href="/quickstart">
-  - Full control over UI/UX
-  - Custom workflows or automation
-  - Backend or mobile app integration
-  - A robust, scalable integration method
+## Contract integration
 
-  **Ideal for:** Wallets, swap aggregators, trading bots, DeFi platforms.
-</Card>
+Direct calls to the WarpSource and WarpDestination contracts for protocols that need fully on-chain execution — DEXs, liquidity networks and solver systems. See [Protocol design](/warp-bridge/protocol).
 
-## Warp Bridge Widget
+## Next steps
 
-**Best for fast integration and deployment**
-
-The widget is designed to let you add cross-chain transfers to any website or dApp in minutes, as a customizable plug-and-play component that works via iframe or JS snippet.
-
-<Card title="Best for teams that need:" icon="window" href="/quickstart#embedded-widget-coming-soon">
-  - Fastest time-to-market
-  - Minimal engineering work
-  - A ready-made UI component
-  - Easy integration in dashboards or WebViews
-
-  **Ideal for:** Token swap pages, dashboards, portfolio tools, prototypes.
-</Card>
-
-## Smart Contract Integration
-
-**Best for trust-minimized, on-chain DeFi integrations**
-
-For protocols that need full decentralization, Warp Bridge is designed to offer on-chain contract hooks. Developers will be able to interact directly with the bridge contracts to initiate or fulfill cross-chain transfers.
-
-<Card title="Best for teams that need:" icon="file-contract" href="/warp-bridge/protocol">
-  - Fully on-chain, trust-minimized execution
-  - Protocol-level features (DEXs, aggregators, solver networks)
-  - Deterministic and verifiable cross-chain behavior
-
-  **Ideal for:** DEXs, liquidity networks, solver systems, automated execution engines.
-</Card>
+<CardGroup cols={2}>
+  <Card title="Protocol design" icon="microscope" href="/warp-bridge/protocol">
+    How orders are locked, filled, settled and canceled.
+  </Card>
+  <Card title="Accept payments today" icon="credit-card" href="/quickstart">
+    Pay with Warp is live.
+  </Card>
+</CardGroup>
