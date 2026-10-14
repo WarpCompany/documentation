@@ -3,9 +3,9 @@
     "theme": "almond",
     "name": "Secure DeFi Infrastructure",
     "colors": {
-      "primary": "#29caff",
-      "light": "#29caff",
-      "dark": "#29caff"
+      "primary": "#9E1FAA",
+      "light": "#9E1FAA",
+      "dark": "#9E1FAA"
     },
     "favicon": "/favicon.png",
     "navigation": {
