@@ -9,9 +9,9 @@ The embedded checkout shows the hosted Warp checkout inside your page, in a moda
 
 | Package | Use it for |
 | --- | --- |
-| [`@usewarp/react`](https://github.com/WarpCompany/warp-react) | React 18+ and Next.js |
-| [`@usewarp/vue`](https://github.com/WarpCompany/warp-vue) | Vue 3.3+ and Nuxt |
-| [`@usewarp/js`](https://github.com/WarpCompany/warp-js) | Any other site: ES module, `<script>` tag or the `<warp-checkout>` web component |
+| [`@warpfi/react`](https://github.com/WarpCompany/warp-react) | React 18+ and Next.js |
+| [`@warpfi/vue`](https://github.com/WarpCompany/warp-vue) | Vue 3.3+ and Nuxt |
+| [`@warpfi/js`](https://github.com/WarpCompany/warp-js) | Any other site: ES module, `<script>` tag or the `<warp-checkout>` web component |
 
 <Warning>
   Events from the embedded checkout are UI signals only. Fulfil orders from the `payment.completed` [webhook](/warp-pay/webhooks) or by [retrieving the session](/api-reference/checkout-sessions/retrieve) on your server.
@@ -36,7 +36,7 @@ The embedded checkout shows the hosted Warp checkout inside your page, in a moda
 The browser never sees your secret key. This example uses the [Node.js SDK](/sdks/node):
 
 ```ts
-import Warp from '@usewarp/node'
+import Warp from '@warpfi/node'
 
 const warp = new Warp(process.env.WARP_SECRET_KEY!)
 
@@ -57,13 +57,13 @@ app.post('/api/checkout', async (req, res) => {
 <Tabs>
   <Tab title="React">
     ```bash
-    npm install @usewarp/react
+    npm install @warpfi/react
     ```
 
     ```tsx
     'use client'
 
-    import { WarpCheckout, PayWithWarpButton } from '@usewarp/react'
+    import { WarpCheckout, PayWithWarpButton } from '@warpfi/react'
 
     async function createCheckout(orderId: string): Promise<string> {
       const res = await fetch('/api/checkout', {
@@ -96,12 +96,12 @@ app.post('/api/checkout', async (req, res) => {
   </Tab>
   <Tab title="Vue">
     ```bash
-    npm install @usewarp/vue
+    npm install @warpfi/vue
     ```
 
     ```vue
     <script setup lang="ts">
-    import { WarpCheckout, PayWithWarpButton } from '@usewarp/vue'
+    import { WarpCheckout, PayWithWarpButton } from '@warpfi/vue'
 
     const props = defineProps<{ orderId: string }>()
 
@@ -133,11 +133,11 @@ app.post('/api/checkout', async (req, res) => {
   </Tab>
   <Tab title="JavaScript">
     ```bash
-    npm install @usewarp/js
+    npm install @warpfi/js
     ```
 
     ```ts
-    import { mountCheckout, openCheckoutModal } from '@usewarp/js'
+    import { mountCheckout, openCheckoutModal } from '@warpfi/js'
 
     async function fetchCheckoutUrl(): Promise<string> {
       const res = await fetch('/api/checkout', { method: 'POST' })
@@ -159,7 +159,7 @@ app.post('/api/checkout', async (req, res) => {
   <Tab title="Script tag">
     ```html
     <div id="checkout"></div>
-    <script src="https://cdn.jsdelivr.net/npm/@usewarp/js@0/dist/warp.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@warpfi/js@0/dist/warp.global.js"></script>
     <script>
       Warp.mountCheckout('#checkout', {
         fetchCheckoutUrl: () =>

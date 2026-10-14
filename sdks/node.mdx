@@ -1,11 +1,11 @@
 ---
 title: "Node.js SDK"
 sidebarTitle: "Node.js"
-description: "Create checkout sessions, verify webhooks and verify ZK proofs from Node.js with @usewarp/node."
+description: "Create checkout sessions, verify webhooks and verify ZK proofs from Node.js with @warpfi/node."
 icon: "node-js"
 ---
 
-`@usewarp/node` is the server-side SDK for the Warp API. It wraps the `/v1` endpoints with typed methods, maps errors to classes, retries safe requests, and verifies webhook signatures. It has no runtime dependencies and needs Node.js 18 or later.
+`@warpfi/node` is the server-side SDK for the Warp API. It wraps the `/v1` endpoints with typed methods, maps errors to classes, retries safe requests, and verifies webhook signatures. It has no runtime dependencies and needs Node.js 18 or later.
 
 <Warning>
   The SDK uses your secret key. Run it on your server only. The constructor throws in a browser.
@@ -14,14 +14,14 @@ icon: "node-js"
 ## Install
 
 ```bash
-npm install @usewarp/node
+npm install @warpfi/node
 ```
 
 ## Create a session
 
 ```ts
 import express from 'express'
-import Warp from '@usewarp/node'
+import Warp from '@warpfi/node'
 
 const warp = new Warp(process.env.WARP_SECRET_KEY!)
 const app = express()
@@ -41,7 +41,7 @@ app.post('/checkout', async (req, res) => {
 })
 ```
 
-`sk_test_` keys create testnet sessions and `sk_live_` keys create mainnet sessions. `warp.mode` is `'test'` or `'live'`. CommonJS works too: `const { Warp } = require('@usewarp/node')`.
+`sk_test_` keys create testnet sessions and `sk_live_` keys create mainnet sessions. `warp.mode` is `'test'` or `'live'`. CommonJS works too: `const { Warp } = require('@warpfi/node')`.
 
 To show the checkout on your own page instead of redirecting, return `checkout_url` to the browser and use the [embedded checkout](/warp-pay/embedded-checkout).
 
@@ -68,7 +68,7 @@ for await (const s of warp.checkout.sessions.listAll({ status: 'completed' })) {
 Verify each delivery against the **raw** request body:
 
 ```ts
-import Warp, { WarpSignatureVerificationError } from '@usewarp/node'
+import Warp, { WarpSignatureVerificationError } from '@warpfi/node'
 
 app.post('/webhooks/warp', express.raw({ type: 'application/json' }), async (req, res) => {
   let event
