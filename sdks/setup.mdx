@@ -1,0 +1,443 @@
+---
+title: "Set up the SDKs"
+sidebarTitle: "Set up with examples"
+description: "Add Pay with Warp to a Next.js, Nuxt or Express app with the Warp SDKs: create sessions, embed the checkout and confirm payments with webhooks."
+icon: "screwdriver-wrench"
+---
+
+This guide adds an embedded checkout to your app in four steps. Each step has an example for Next.js (React), Nuxt (Vue) and Express with plain JavaScript. Pick one stack and follow its tab all the way down.
+
+| You will build | Package |
+| --- | --- |
+| A server endpoint that creates a checkout session | `@warpfi/node` |
+| A page that shows the checkout | `@warpfi/react`, `@warpfi/vue` or `@warpfi/js` |
+| A webhook handler that marks the order as paid | `@warpfi/node` |
+
+## Before you start
+
+- A [Warp Platform](https://platform.usewarp.net) project with a receiving address for testnet payments.
+- The project's **test secret key** (`sk_test_...`).
+- A webhook endpoint configured in the Platform, and its **signing secret**. You can add this in step 4.
+- A testnet wallet, as described in the [Quickstart](/quickstart#prerequisites).
+
+<Steps>
+  <Step title="Install and configure">
+    <Tabs>
+      <Tab title="Next.js">
+        ```bash
+        npm install @warpfi/node @warpfi/react
+        ```
+      </Tab>
+      <Tab title="Nuxt">
+        ```bash
+        npm install @warpfi/node @warpfi/vue
+        ```
+      </Tab>
+      <Tab title="Express + JavaScript">
+        ```bash
+        npm install @warpfi/node @warpfi/js express
+        ```
+
+        No bundler? Skip `@warpfi/js` and load the CDN build with a `<script>` tag, shown in step 3.
+      </Tab>
+    </Tabs>
+
+    Add your keys to the server environment, for example in `.env.local` (Next.js) or `.env` (Nuxt, Express). Never commit this file.
+
+    ```bash .env
+    WARP_SECRET_KEY=sk_test_...
+    WARP_WEBHOOK_SECRET=your-webhook-signing-secret
+    ```
+
+    Create one shared client on the server:
+
+    ```ts lib/warp.ts
+    import Warp from '@warpfi/node'
+
+    export const warp = new Warp(process.env.WARP_SECRET_KEY!)
+    ```
+
+    `sk_test_` keys create testnet sessions; switch to `sk_live_` when you go live. The constructor throws in a browser, so import this file from server code only.
+  </Step>
+
+  <Step title="Create a checkout session on your server">
+    The browser asks your server for a session. Your server takes the amount from its own records, creates the session and returns `checkout_url`.
+
+    <Tabs>
+      <Tab title="Next.js">
+        ```ts app/api/checkout/route.ts
+        import { warp } from '@/lib/warp'
+
+        export async function POST(request: Request) {
+          const { orderId } = await request.json()
+          const order = await getOrder(orderId) // your own data layer
+          if (!order) return Response.json({ error: 'Order not found' }, { status: 404 })
+
+          const origin = new URL(request.url).origin
+          const session = await warp.checkout.sessions.create({
+            amount_usd: order.totalUsd,
+            description: `Order #${order.id}`,
+            metadata: { order_id: order.id },
+            return_url: `${origin}/orders/${order.id}`,
+            cancel_url: `${origin}/cart`,
+          })
+
+          return Response.json({ checkoutUrl: session.checkout_url })
+        }
+        ```
+      </Tab>
+      <Tab title="Nuxt">
+        ```ts server/api/checkout.post.ts
+        import { warp } from '~/lib/warp'
+
+        export default defineEventHandler(async (event) => {
+          const { orderId } = await readBody<{ orderId: string }>(event)
+          const order = await getOrder(orderId) // your own data layer
+          if (!order) throw createError({ statusCode: 404, statusMessage: 'Order not found' })
+
+          const origin = getRequestURL(event).origin
+          const session = await warp.checkout.sessions.create({
+            amount_usd: order.totalUsd,
+            description: `Order #${order.id}`,
+            metadata: { order_id: order.id },
+            return_url: `${origin}/orders/${order.id}`,
+            cancel_url: `${origin}/cart`,
+          })
+
+          return { checkoutUrl: session.checkout_url }
+        })
+        ```
+      </Tab>
+      <Tab title="Express + JavaScript">
+        ```ts server.ts
+        import express from 'express'
+        import { warp } from './lib/warp'
+
+        const app = express()
+        const SITE_URL = process.env.SITE_URL ?? 'http://localhost:3000'
+
+        app.post('/api/checkout', express.json(), async (req, res) => {
+          const order = await getOrder(req.body.orderId) // your own data layer
+          if (!order) return res.status(404).json({ error: 'Order not found' })
+
+          const session = await warp.checkout.sessions.create({
+            amount_usd: order.totalUsd,
+            description: `Order #${order.id}`,
+            metadata: { order_id: order.id },
+            return_url: `${SITE_URL}/orders/${order.id}`,
+            cancel_url: `${SITE_URL}/cart`,
+          })
+
+          res.json({ checkoutUrl: session.checkout_url })
+        })
+
+        app.use(express.static('public'))
+        app.listen(3000)
+        ```
+      </Tab>
+    </Tabs>
+
+    <Note>
+      `return_url` and `cancel_url` must be on the site that embeds the checkout: their origins are the only ones allowed to frame it. Testnet sessions are also allowed on `http://localhost` and `http://127.0.0.1`, so this works in local development as is. See [Allowed origins](/warp-pay/embedded-checkout#allowed-origins).
+    </Note>
+  </Step>
+
+  <Step title="Show the checkout">
+    Each client SDK takes a `fetchCheckoutUrl` function that calls your endpoint. Use the inline checkout, or a button that opens it in a modal.
+
+    <Tabs>
+      <Tab title="Next.js">
+        ```tsx app/checkout/[orderId]/checkout.tsx
+        'use client'
+
+        import { WarpCheckout, PayWithWarpButton } from '@warpfi/react'
+        import { useRouter } from 'next/navigation'
+
+        async function createCheckout(orderId: string): Promise<string> {
+          const res = await fetch('/api/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId }),
+          })
+          if (!res.ok) throw new Error('Could not start checkout')
+          return (await res.json()).checkoutUrl
+        }
+
+        // Inline, in your page layout
+        export function Checkout({ orderId }: { orderId: string }) {
+          const router = useRouter()
+          return (
+            <WarpCheckout
+              fetchCheckoutUrl={() => createCheckout(orderId)}
+              onComplete={() => router.push(`/orders/${orderId}`)}
+              onCancel={() => router.push('/cart')}
+              onError={(error) => console.error(error.code, error.message)}
+            />
+          )
+        }
+
+        // Or a button that opens a modal
+        export function BuyButton({ orderId }: { orderId: string }) {
+          return <PayWithWarpButton fetchCheckoutUrl={() => createCheckout(orderId)} />
+        }
+        ```
+
+        ```tsx app/checkout/[orderId]/page.tsx
+        import { Checkout } from './checkout'
+
+        export default async function Page({ params }: { params: Promise<{ orderId: string }> }) {
+          const { orderId } = await params
+          return <Checkout orderId={orderId} />
+        }
+        ```
+
+        The components are client components. More options: [React SDK](/sdks/react).
+      </Tab>
+      <Tab title="Nuxt">
+        ```vue pages/checkout/[orderId].vue
+        <script setup lang="ts">
+        import { WarpCheckout, PayWithWarpButton } from '@warpfi/vue'
+
+        const orderId = useRoute().params.orderId as string
+
+        async function createCheckout(): Promise<string> {
+          const { checkoutUrl } = await $fetch<{ checkoutUrl: string }>('/api/checkout', {
+            method: 'POST',
+            body: { orderId },
+          })
+          return checkoutUrl
+        }
+        </script>
+
+        <template>
+          <!-- Inline -->
+          <WarpCheckout
+            :fetch-checkout-url="createCheckout"
+            @complete="navigateTo(`/orders/${orderId}`)"
+            @cancel="navigateTo('/cart')"
+          />
+
+          <!-- Or a button that opens a modal -->
+          <PayWithWarpButton :fetch-checkout-url="createCheckout" />
+        </template>
+        ```
+
+        The checkout mounts in the browser only, so it is safe with server-side rendering. More options: [Vue SDK](/sdks/vue).
+      </Tab>
+      <Tab title="Express + JavaScript">
+        ```ts public/checkout.ts
+        import { mountCheckout, openCheckoutModal } from '@warpfi/js'
+
+        const orderId = new URLSearchParams(location.search).get('order')!
+
+        async function fetchCheckoutUrl(): Promise<string> {
+          const res = await fetch('/api/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId }),
+          })
+          if (!res.ok) throw new Error('Could not start checkout')
+          return (await res.json()).checkoutUrl
+        }
+
+        // Inline, inside <div id="checkout">
+        mountCheckout('#checkout', {
+          fetchCheckoutUrl,
+          onComplete: () => (location.href = `/orders/${orderId}`),
+          onCancel: () => (location.href = '/cart'),
+          onError: (error) => console.error(error.code, error.message),
+        }).catch(() => {})
+
+        // Or a modal from <button id="pay">
+        document.querySelector('#pay')?.addEventListener('click', () => {
+          openCheckoutModal({ fetchCheckoutUrl }).catch(() => {})
+        })
+        ```
+
+        Without a bundler, load the CDN build instead:
+
+        ```html public/checkout.html
+        <div id="checkout"></div>
+        <script src="https://cdn.jsdelivr.net/npm/@warpfi/js@0/dist/warp.global.js"></script>
+        <script>
+          const orderId = new URLSearchParams(location.search).get('order')
+
+          Warp.mountCheckout('#checkout', {
+            fetchCheckoutUrl: () =>
+              fetch('/api/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId }),
+              })
+                .then((res) => res.json())
+                .then((data) => data.checkoutUrl),
+            onComplete: () => (location.href = '/orders/' + orderId),
+          })
+        </script>
+        ```
+
+        More options: [JavaScript SDK](/sdks/javascript).
+      </Tab>
+    </Tabs>
+
+    <Warning>
+      `onComplete` is a UI signal so you can update the page. Anyone can trigger it from the browser console. Never fulfil an order from it: use the webhook in the next step.
+    </Warning>
+  </Step>
+
+  <Step title="Confirm the payment with a webhook">
+    Warp sends `payment.completed` to your webhook URL when the payment is confirmed on-chain. Verify the signature against the **raw** body, skip events you have already handled, then fulfil the order.
+
+    <Tabs>
+      <Tab title="Next.js">
+        ```ts app/api/webhooks/warp/route.ts
+        import { WarpSignatureVerificationError } from '@warpfi/node'
+        import { warp } from '@/lib/warp'
+
+        export async function POST(request: Request) {
+          const body = await request.text() // raw body, before any JSON parsing
+
+          let event
+          try {
+            event = warp.webhooks.constructEvent(
+              body,
+              request.headers.get('Warp-Signature'),
+              process.env.WARP_WEBHOOK_SECRET!,
+            )
+          } catch (err) {
+            if (err instanceof WarpSignatureVerificationError) {
+              return new Response('Invalid signature', { status: 400 })
+            }
+            throw err
+          }
+
+          if (await alreadyProcessed(event.id)) return new Response(null, { status: 200 })
+
+          if (event.type === 'payment.completed') {
+            const session = event.data.object
+            await markOrderPaid(session.metadata.order_id, session.payment?.tx_hash)
+          }
+
+          await recordProcessed(event.id)
+          return new Response(null, { status: 200 })
+        }
+        ```
+      </Tab>
+      <Tab title="Nuxt">
+        ```ts server/api/webhooks/warp.post.ts
+        import { WarpSignatureVerificationError } from '@warpfi/node'
+        import { warp } from '~/lib/warp'
+
+        export default defineEventHandler(async (event) => {
+          const body = (await readRawBody(event)) ?? '' // raw body, before any JSON parsing
+
+          let warpEvent
+          try {
+            warpEvent = warp.webhooks.constructEvent(
+              body,
+              getHeader(event, 'Warp-Signature'),
+              process.env.WARP_WEBHOOK_SECRET!,
+            )
+          } catch (err) {
+            if (err instanceof WarpSignatureVerificationError) {
+              throw createError({ statusCode: 400, statusMessage: 'Invalid signature' })
+            }
+            throw err
+          }
+
+          if (await alreadyProcessed(warpEvent.id)) return { received: true }
+
+          if (warpEvent.type === 'payment.completed') {
+            const session = warpEvent.data.object
+            await markOrderPaid(session.metadata.order_id, session.payment?.tx_hash)
+          }
+
+          await recordProcessed(warpEvent.id)
+          return { received: true }
+        })
+        ```
+      </Tab>
+      <Tab title="Express + JavaScript">
+        ```ts server.ts
+        import { WarpSignatureVerificationError } from '@warpfi/node'
+
+        // Register before any express.json() that would consume the body
+        app.post('/api/webhooks/warp', express.raw({ type: 'application/json' }), async (req, res) => {
+          let event
+          try {
+            event = warp.webhooks.constructEvent(req.body, req.get('Warp-Signature'), process.env.WARP_WEBHOOK_SECRET!)
+          } catch (err) {
+            if (err instanceof WarpSignatureVerificationError) return res.status(400).send('Invalid signature')
+            throw err
+          }
+
+          if (await alreadyProcessed(event.id)) return res.sendStatus(200)
+
+          if (event.type === 'payment.completed') {
+            const session = event.data.object
+            await markOrderPaid(session.metadata.order_id, session.payment?.tx_hash)
+          }
+
+          await recordProcessed(event.id)
+          res.sendStatus(200)
+        })
+        ```
+      </Tab>
+    </Tabs>
+
+    Respond with a 2xx quickly; Warp retries other responses. Events, payloads and the retry schedule are in [Webhooks](/warp-pay/webhooks). If you cannot receive webhooks, retrieve the session on your server with `warp.checkout.sessions.retrieve(id)` and check that `status` is `completed`.
+  </Step>
+</Steps>
+
+## Test it
+
+1. Start your app on `http://localhost` with your `sk_test_` key.
+2. Open the checkout page. The checkout loads inside your page.
+3. Pay with your testnet wallet. `onComplete` fires when the payment is confirmed.
+4. Check that your webhook handler marked the order as paid. To reach a local server from Warp, use a tunnel such as `ngrok` or `cloudflared` and set its URL as the webhook endpoint for your test project.
+
+To unit-test your webhook handler without Warp, sign your own payloads with `generateTestHeader`:
+
+```ts
+import { generateTestHeader } from '@warpfi/node'
+
+const payload = JSON.stringify({ id: 'evt_test', type: 'payment.completed', data: { object: session } })
+const header = generateTestHeader({ payload, secret: process.env.WARP_WEBHOOK_SECRET! })
+// POST payload to your handler with the header `Warp-Signature: ${header}`
+```
+
+## Troubleshooting
+
+| Symptom | Cause and fix |
+| --- | --- |
+| `load_failed` error, or the frame shows a "refused to connect" page | The page's origin is not allowed to frame this session. Make `return_url` or `cancel_url` use the same origin as the page. Live sessions do not allow `localhost`. |
+| Nothing loads and your browser console shows a CSP error | Your site's Content-Security-Policy blocks the frame. Add `frame-src https://checkout.usewarp.net`. |
+| `popup_blocked` error | Popups must open directly from a click. Call `openCheckoutPopup` (or `openPopup`) in the click handler before awaiting anything. |
+| The popup never reports back | Your page sends `Cross-Origin-Opener-Policy: same-origin`. Use `same-origin-allow-popups`. |
+| `WarpSignatureVerificationError` on every webhook | The body was parsed or re-serialized before verification, or the secret is wrong. Pass the raw body and the signing secret for the same project and network. |
+| `WarpAuthenticationError` when creating a session | The secret key is missing, revoked or for another environment. Check `WARP_SECRET_KEY` on the server. |
+| `@warpfi/node is a server SDK and must not run in a browser` | `@warpfi/node` was imported in client code. Keep it in server routes only. |
+
+## Going live
+
+- Replace `sk_test_` with your `sk_live_` key and the live webhook signing secret.
+- Make sure `return_url` and `cancel_url` use your production origin over HTTPS.
+- Fulfil orders only from the webhook or a server-side session lookup.
+- Store processed event ids so retried webhooks are not handled twice.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Embedded checkout" icon="window" href="/warp-pay/embedded-checkout">
+    Display modes, events and allowed origins.
+  </Card>
+  <Card title="Webhooks" icon="bell" href="/warp-pay/webhooks">
+    Events, payload, signatures and retries.
+  </Card>
+  <Card title="Node.js SDK" icon="node-js" href="/sdks/node">
+    Sessions, pagination, errors and ZK proofs.
+  </Card>
+  <Card title="SDK overview" icon="cubes" href="/sdks/overview">
+    All packages with npm and GitHub links.
+  </Card>
+</CardGroup>

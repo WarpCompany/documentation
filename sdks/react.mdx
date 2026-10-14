@@ -1,0 +1,141 @@
+---
+title: "React SDK"
+sidebarTitle: "React"
+description: "Embed the Pay with Warp checkout in React and Next.js with @warpfi/react."
+icon: "react"
+---
+
+`@warpfi/react` shows the hosted Warp checkout on your page: inline, in a modal or in a popup. It needs React 18 or later and works with Next.js (App Router and Pages Router).
+
+[npm](https://www.npmjs.com/package/@warpfi/react) · [GitHub](https://github.com/WarpCompany/warp-react)
+
+## Install
+
+```bash
+npm install @warpfi/react
+```
+
+The components are client components (`'use client'`). Your server creates the session with the [Node.js SDK](/sdks/node) and returns its `checkout_url`. For a complete Next.js walkthrough, see [Set up with examples](/sdks/setup).
+
+## Inline checkout
+
+```tsx
+'use client'
+
+import { WarpCheckout } from '@warpfi/react'
+import { useRouter } from 'next/navigation'
+
+async function createCheckout(orderId: string): Promise<string> {
+  const res = await fetch('/api/checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ orderId }),
+  })
+  if (!res.ok) throw new Error('Could not start checkout')
+  return (await res.json()).checkoutUrl
+}
+
+export function Checkout({ orderId }: { orderId: string }) {
+  const router = useRouter()
+
+  return (
+    <WarpCheckout
+      fetchCheckoutUrl={() => createCheckout(orderId)}
+      onComplete={() => router.push(`/orders/${orderId}`)}
+      onCancel={() => router.push('/cart')}
+      onError={(error) => console.error(error.code, error.message)}
+    />
+  )
+}
+```
+
+`fetchCheckoutUrl` is called once per mount. If you already have the URL, pass `checkoutUrl` instead. The iframe resizes to its content. It remounts when `checkoutUrl`, `theme` or `checkoutOrigin` change; changing callbacks never remounts it.
+
+## Modal button
+
+`<PayWithWarpButton>` creates the session when clicked and opens the checkout in a full-screen modal. It is disabled and `aria-busy` while loading.
+
+```tsx
+<PayWithWarpButton
+  className="btn btn-primary"
+  fetchCheckoutUrl={() => createCheckout(orderId)}
+  onComplete={() => console.log('Payment submitted, waiting for the webhook')}
+>
+  Pay with crypto
+</PayWithWarpButton>
+```
+
+The modal closes on Escape, the backdrop or the close button (calling `onCancel` if the payment has not completed), and after the customer cancels or returns from the success page. `onClose` is called last every time it closes.
+
+## Popup and redirect
+
+```tsx
+<PayWithWarpButton mode="popup" fetchCheckoutUrl={() => createCheckout(orderId)} />
+<PayWithWarpButton mode="redirect" fetchCheckoutUrl={() => createCheckout(orderId)}>
+  Continue to payment
+</PayWithWarpButton>
+```
+
+Use `popup` where your page cannot frame the checkout, and `redirect` to send the customer to the hosted page. The popup opens synchronously from the click; if the browser blocks it anyway, `onError` receives `popup_blocked`.
+
+## Hook
+
+`useWarpCheckout` gives you the modal and popup behind your own UI:
+
+```tsx
+'use client'
+
+import { useWarpCheckout } from '@warpfi/react'
+
+export function CustomCheckout({ orderId }: { orderId: string }) {
+  const { openModal, openPopup, close, status, sessionId, isOpen, isLoading, error } = useWarpCheckout({
+    fetchCheckoutUrl: () => createCheckout(orderId),
+    theme: 'dark',
+    onComplete: () => console.log('completed'),
+  })
+
+  return (
+    <div>
+      <button onClick={openModal} disabled={isLoading}>Pay in a modal</button>
+      <button onClick={openPopup} disabled={isLoading}>Pay in a new window</button>
+      {isOpen && <button onClick={close}>Close</button>}
+      {status && <p>Session {sessionId}: {status}</p>}
+      {error && <p role="alert">{error.message}</p>}
+    </div>
+  )
+}
+```
+
+Call `openPopup` directly in the click handler, without awaiting anything first. The returned functions are stable. Opening again closes the previous checkout, and unmounting closes it too.
+
+## Props
+
+`<WarpCheckout>`
+
+| Prop | Type | Description |
+| --- | --- | --- |
+| `checkoutUrl` | `string` | `checkout_url` of a session created on your server |
+| `fetchCheckoutUrl` | `() => Promise<string>` | Creates a session on your server and returns its `checkout_url`. Used when `checkoutUrl` is not set |
+| `theme` | `'light' \| 'dark' \| 'auto'` | Default `auto` |
+| `checkoutOrigin` | `string` | Self-hosted or staging checkout. Default `https://checkout.usewarp.net` |
+| `onReady`, `onStatus`, `onComplete`, `onCancel`, `onReturn`, `onError` | | See [Events](/warp-pay/embedded-checkout#events) |
+| `className`, `style`, `id` | | Applied to the container element |
+
+`<PayWithWarpButton>` takes `fetchCheckoutUrl` (required), `mode` (`'modal'` default, `'popup'` or `'redirect'`), `theme`, `checkoutOrigin`, the same callbacks plus `onClose`, `children` and any `<button>` props.
+
+`useWarpCheckout(options)` takes `checkoutUrl` or `fetchCheckoutUrl`, `theme`, `checkoutOrigin` and the callbacks plus `onClose`. It returns `{ openModal, openPopup, close, status, sessionId, isOpen, isLoading, error }`.
+
+## Exports
+
+| Export | Description |
+| --- | --- |
+| `WarpCheckout` | Inline embedded checkout |
+| `PayWithWarpButton` | Button that opens the checkout in a modal, a popup or by redirecting |
+| `useWarpCheckout` | Hook for custom UIs |
+| `WarpCheckoutError` | Error class with a `code`, re-exported from `@warpfi/js` |
+| `DEFAULT_CHECKOUT_ORIGIN` | `https://checkout.usewarp.net` |
+| Types | `CheckoutStatus`, `CheckoutTheme`, `WarpCheckoutProps`, `PayWithWarpButtonProps`, `UseWarpCheckoutOptions`, `UseWarpCheckoutResult` and more |
+
+<Warning>
+  Callbacks are UI signals only. Fulfil orders from the `payment.completed` [webhook](/warp-pay/webhooks) or a server-side session lookup.
+</Warning>

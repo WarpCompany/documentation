@@ -7,11 +7,13 @@ icon: "window"
 
 The embedded checkout shows the hosted Warp checkout inside your page, in a modal, or in a popup, instead of redirecting the customer. It is the same checkout page, so wallet connection, quotes and on-chain verification work exactly as with a redirect.
 
-| Package | Use it for |
-| --- | --- |
-| [`@warpfi/react`](https://github.com/WarpCompany/warp-react) | React 18+ and Next.js |
-| [`@warpfi/vue`](https://github.com/WarpCompany/warp-vue) | Vue 3.3+ and Nuxt |
-| [`@warpfi/js`](https://github.com/WarpCompany/warp-js) | Any other site: ES module, `<script>` tag or the `<warp-checkout>` web component |
+| Package | Use it for | Links |
+| --- | --- | --- |
+| `@warpfi/react` | React 18+ and Next.js | [Guide](/sdks/react) · [npm](https://www.npmjs.com/package/@warpfi/react) · [GitHub](https://github.com/WarpCompany/warp-react) |
+| `@warpfi/vue` | Vue 3.3+ and Nuxt | [Guide](/sdks/vue) · [npm](https://www.npmjs.com/package/@warpfi/vue) · [GitHub](https://github.com/WarpCompany/warp-vue) |
+| `@warpfi/js` | Any other site: ES module, `<script>` tag or the `<warp-checkout>` web component | [Guide](/sdks/javascript) · [npm](https://www.npmjs.com/package/@warpfi/js) · [GitHub](https://github.com/WarpCompany/warp-js) |
+
+For a step-by-step setup with full Next.js, Nuxt and Express examples, see [Set up the SDKs](/sdks/setup).
 
 <Warning>
   Events from the embedded checkout are UI signals only. Fulfil orders from the `payment.completed` [webhook](/warp-pay/webhooks) or by [retrieving the session](/api-reference/checkout-sessions/retrieve) on your server.
@@ -222,5 +224,11 @@ The checkout can only be framed by, and only sends events to, the origins of the
   </Card>
   <Card title="Node.js SDK" icon="node-js" href="/sdks/node">
     Create sessions and verify webhooks.
+  </Card>
+  <Card title="Set up with examples" icon="screwdriver-wrench" href="/sdks/setup">
+    Full Next.js, Nuxt and Express walkthroughs.
+  </Card>
+  <Card title="SDK overview" icon="cubes" href="/sdks/overview">
+    Every package with npm and GitHub links.
   </Card>
 </CardGroup>

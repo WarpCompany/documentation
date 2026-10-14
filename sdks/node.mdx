@@ -7,6 +7,8 @@ icon: "node-js"
 
 `@warpfi/node` is the server-side SDK for the Warp API. It wraps the `/v1` endpoints with typed methods, maps errors to classes, retries safe requests, and verifies webhook signatures. It has no runtime dependencies and needs Node.js 18 or later.
 
+[npm](https://www.npmjs.com/package/@warpfi/node) · [GitHub](https://github.com/WarpCompany/warp-node) · [Set up with examples](/sdks/setup)
+
 <Warning>
   The SDK uses your secret key. Run it on your server only. The constructor throws in a browser.
 </Warning>
@@ -140,4 +142,4 @@ const warp = new Warp(process.env.WARP_SECRET_KEY!, { timeout: 10_000, maxRetrie
 | `maxRetries` | `2` | Retries for GET requests on network errors, 429 and 5xx. POST requests are never retried. |
 | `fetch` | global `fetch` | Custom fetch implementation |
 
-Source: [github.com/WarpCompany/warp-node](https://github.com/WarpCompany/warp-node).
+Source: [github.com/WarpCompany/warp-node](https://github.com/WarpCompany/warp-node). Package: [npmjs.com/package/@warpfi/node](https://www.npmjs.com/package/@warpfi/node).

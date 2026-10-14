@@ -52,7 +52,12 @@
           {
             "group": "SDKs",
             "pages": [
-              "sdks/node"
+              "sdks/overview",
+              "sdks/setup",
+              "sdks/node",
+              "sdks/react",
+              "sdks/vue",
+              "sdks/javascript"
             ]
           },
           {
