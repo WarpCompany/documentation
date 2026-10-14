@@ -1,0 +1,143 @@
+---
+title: "Node.js SDK"
+sidebarTitle: "Node.js"
+description: "Create checkout sessions, verify webhooks and verify ZK proofs from Node.js with @usewarp/node."
+icon: "node-js"
+---
+
+`@usewarp/node` is the server-side SDK for the Warp API. It wraps the `/v1` endpoints with typed methods, maps errors to classes, retries safe requests, and verifies webhook signatures. It has no runtime dependencies and needs Node.js 18 or later.
+
+<Warning>
+  The SDK uses your secret key. Run it on your server only. The constructor throws in a browser.
+</Warning>
+
+## Install
+
+```bash
+npm install @usewarp/node
+```
+
+## Create a session
+
+```ts
+import express from 'express'
+import Warp from '@usewarp/node'
+
+const warp = new Warp(process.env.WARP_SECRET_KEY!)
+const app = express()
+
+app.post('/checkout', async (req, res) => {
+  const order = await getOrder(req.body.orderId) // your own data layer
+
+  const session = await warp.checkout.sessions.create({
+    amount_usd: order.totalUsd,
+    description: `Order #${order.id}`,
+    metadata: { order_id: order.id },
+    return_url: `https://example.com/orders/${order.id}`,
+    cancel_url: 'https://example.com/cart',
+  })
+
+  res.redirect(303, session.checkout_url)
+})
+```
+
+`sk_test_` keys create testnet sessions and `sk_live_` keys create mainnet sessions. `warp.mode` is `'test'` or `'live'`. CommonJS works too: `const { Warp } = require('@usewarp/node')`.
+
+To show the checkout on your own page instead of redirecting, return `checkout_url` to the browser and use the [embedded checkout](/warp-pay/embedded-checkout).
+
+## Retrieve and list sessions
+
+```ts
+const session = await warp.checkout.sessions.retrieve('ps_8f14e45fceea167a5a36dedd4bea2543')
+
+if (session.status === 'completed') {
+  console.log(session.payment?.tx_hash)
+}
+
+// One page
+const page = await warp.checkout.sessions.list({ status: 'completed', limit: 20 })
+
+// Every session, following the pagination cursor
+for await (const s of warp.checkout.sessions.listAll({ status: 'completed' })) {
+  console.log(s.id, s.amount_usd)
+}
+```
+
+## Webhooks
+
+Verify each delivery against the **raw** request body:
+
+```ts
+import Warp, { WarpSignatureVerificationError } from '@usewarp/node'
+
+app.post('/webhooks/warp', express.raw({ type: 'application/json' }), async (req, res) => {
+  let event
+  try {
+    event = warp.webhooks.constructEvent(req.body, req.get('Warp-Signature'), process.env.WARP_WEBHOOK_SECRET!)
+  } catch (err) {
+    if (err instanceof WarpSignatureVerificationError) return res.status(400).send('Invalid signature')
+    throw err
+  }
+
+  if (await alreadyProcessed(event.id)) return res.sendStatus(200)
+
+  const session = event.data.object
+  if (event.type === 'payment.completed') {
+    await markOrderPaid(session.metadata.order_id, session.payment?.tx_hash)
+  }
+
+  await recordProcessed(event.id)
+  res.sendStatus(200)
+})
+```
+
+`constructEvent` rejects a missing or malformed header, a signature mismatch, and timestamps more than 300 seconds from your clock (pass a fourth argument to change the tolerance). `verifySignature` and `generateTestHeader` are also exported standalone and do not need an API key. See [Webhooks](/warp-pay/webhooks) for events and retries.
+
+## ZK proofs
+
+```ts
+const { nonce } = await warp.zk.proofs.createNonce(proofId)
+
+// Generate the proof with `nonce` as a public input, then:
+const result = await warp.zk.proofs.verify(proofId, {
+  proof,
+  public_signals: publicSignals,
+  nonce,
+  onchain: false,
+})
+
+if (result.valid) {
+  // result.receipt is a JWS you can check against /v1/.well-known/jwks.json
+}
+```
+
+`warp.zk.proofs.getInterface(proofId)` returns the deployed verifier's address, chain and ABI. `warp.attestations.retrieve(id)` calls the public attestation endpoint without your key.
+
+## Errors
+
+Every error is a `WarpError` with `message`, `status`, `code` and `requestId` (the `X-Request-Id` header; include it when you contact support).
+
+| Class | When |
+| --- | --- |
+| `WarpAuthenticationError` | 401: missing or invalid secret key |
+| `WarpInvalidRequestError` | 400 or 422: invalid parameters |
+| `WarpNotFoundError` | 404: no such resource for this key's project and network |
+| `WarpRateLimitError` | 429: too many requests |
+| `WarpAPIError` | 5xx: the API failed to handle the request |
+| `WarpConnectionError` | Network error or timeout |
+| `WarpSignatureVerificationError` | A webhook signature could not be verified |
+
+## Configuration
+
+```ts
+const warp = new Warp(process.env.WARP_SECRET_KEY!, { timeout: 10_000, maxRetries: 3 })
+```
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `baseUrl` | `https://api.usewarp.net` | API origin |
+| `timeout` | `30000` | Timeout per attempt, in milliseconds |
+| `maxRetries` | `2` | Retries for GET requests on network errors, 429 and 5xx. POST requests are never retried. |
+| `fetch` | global `fetch` | Custom fetch implementation |
+
+Source: [github.com/WarpCompany/warp-node](https://github.com/WarpCompany/warp-node).

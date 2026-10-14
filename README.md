@@ -44,7 +44,8 @@ The preview runs at `http://localhost:3000`.
 | `index.mdx`        | Landing page                               |
 | `quickstart.mdx`   | Getting started guide                      |
 | `products.mdx`     | Product overview                           |
-| `warp-pay/`        | Pay with Warp guides, webhooks, examples   |
+| `warp-pay/`        | Pay with Warp guides, embedded checkout, webhooks, examples |
+| `sdks/`            | SDK guides                                 |
 | `zkproofs/`        | ZK Proofs                                  |
 | `warp-verify/`     | Warp Verify                                |
 | `warp-bridge/`     | Warp Bridge design (roadmap)               |

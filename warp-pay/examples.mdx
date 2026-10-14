@@ -11,6 +11,10 @@ These examples show common Pay with Warp integrations. They are starting points 
   Create sessions on your server with your secret key, using an amount from your own records. Never send the secret key to the browser and never trust an amount sent by the browser.
 </Warning>
 
+<Tip>
+  These examples call the REST API with `fetch` and `requests`. In Node.js you can use the [Node.js SDK](/sdks/node) instead, and to show the checkout on your own page see [Embedded checkout](/warp-pay/embedded-checkout).
+</Tip>
+
 ## Prerequisites
 
 - A Warp project and its secret key in `WARP_SECRET_KEY` (`sk_test_...` while testing).

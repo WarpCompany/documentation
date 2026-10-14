@@ -44,8 +44,15 @@
             "group": "Pay with Warp",
             "pages": [
               "warp-pay/index",
+              "warp-pay/embedded-checkout",
               "warp-pay/webhooks",
               "warp-pay/examples"
+            ]
+          },
+          {
+            "group": "SDKs",
+            "pages": [
+              "sdks/node"
             ]
           },
           {
