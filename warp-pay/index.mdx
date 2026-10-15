@@ -1,54 +1,141 @@
 ---
-title: "Get Started"
-description: "Pay With Warp lets customers pay with crypto across chains while merchants receive the asset they choose."
+title: "Pay with Warp"
+sidebarTitle: "Overview"
+description: "Accept crypto payments on EVM chains with hosted checkout sessions created from your server."
+icon: "credit-card"
 ---
 
 <img
   src="/images/warp-pay.jpg"
-  alt="Pay With Warp"
-  title="Pay With Warp"
+  alt="Pay with Warp"
   className="mx-auto"
-  style={{ width:"100%" }}
+  style={{ width: "100%" }}
 />
 
-## Pay With Warp
+Pay with Warp is a hosted crypto checkout. Your server creates a checkout session with a secret key, the customer pays on Warp's checkout page, and Warp verifies the transaction on-chain and notifies you with a webhook.
 
-Pay With Warp is a checkout solution that lets customers pay using a supported token on a supported chain, while merchants receive their preferred asset. You create a payment session with the [Checkout API](/api-reference/checkout-api/create-payment-session), send the customer to Warp's hosted checkout, and track the payment until it completes. Over time, Pay With Warp is designed to use Warp Bridge for cross-chain routing and conversion, with crypto-to-fiat payouts planned.
+## How it works
 
-<Note>
-  Warp is under active development. Features marked **Coming Soon** or **Roadmap** are not yet available, and their descriptions reflect design goals rather than current behavior.
-</Note>
+<Steps>
+  <Step title="Create a session on your server">
+    Call [Create a checkout session](/api-reference/checkout-sessions/create) with your secret key and the amount in USD. Sessions can only be created server-side — there are no publishable-key or link-based sessions.
+  </Step>
+  <Step title="Redirect the customer">
+    Send the customer to the session's `checkout_url`. They connect MetaMask or any WalletConnect-compatible wallet, choose a supported chain and token, and pay. The checkout quotes an exact token amount for your USD price, valid for 15 minutes. Stablecoins (USDC, USDT, DAI) are priced at $1. Each quote includes a unique offset of less than one cent that ties the payment to the session, so the customer must send exactly the amount shown.
+  </Step>
+  <Step title="Warp verifies the payment">
+    Warp checks the transaction on-chain: the chain, recipient address, token contract, exact amount, that it was mined after the session was created and before the quote expired, and the number of confirmations. Underpaid, overpaid and late payments fail with a reason.
+  </Step>
+  <Step title="You get notified">
+    Warp sends a `payment.completed` [webhook](/warp-pay/webhooks). You can also [retrieve the session](/api-reference/checkout-sessions/retrieve) at any time.
+  </Step>
+</Steps>
 
-Pay With Warp is designed around three long-term priorities:
+<Info>
+  There is no conversion. You receive the token the customer paid with, at the receiving address configured for your project in the Warp Platform.
+</Info>
 
-### 1. Universal Access
+## Test and live mode
 
-Warp removes the burden of choosing chains, swapping tokens, or bridging manually. One integration is designed to unlock multi-chain support for users and developers alike.
+Each project has a test and a live secret key. The key you use decides the network — there is no separate base URL.
 
-### 2. Fast Settlement
+| Key | Session `network` | Chains offered at checkout |
+| --- | --- | --- |
+| `sk_test_...` | `testnet` | Sepolia, Polygon Amoy, Base Sepolia, Arbitrum Sepolia, Optimism Sepolia |
+| `sk_live_...` | `mainnet` | Ethereum, Polygon, Base, Arbitrum, Optimism |
 
-Pay With Warp is designed for real-time payment experiences. On the roadmap, Warp plans to integrate zero-knowledge proofs to enable near-real-time payment confirmation, so merchants can release digital goods without waiting for full block finality.
+Secret keys are shown once, when you create the project or rotate the key. Keep them on your server.
 
-### 3. Privacy by Design _(Roadmap)_
+## Supported networks and tokens
 
-As Warp Bridge evolves, transactions — including Pay With Warp payments — are planned to flow through Warp's privacy layer, designed to make transfers harder to link on-chain and keep payment details confidential.
+Pay with Warp supports EVM chains only.
 
-Under the hood, Warp Bridge uses a solver-based architecture to find efficient settlement routes, competitive pricing, and efficient use of liquidity. For developers and end users, this complexity is abstracted away behind a single interface.
+| Network | Mainnet tokens | Testnet | Testnet tokens | Confirmations (mainnet / testnet) |
+| --- | --- | --- | --- | --- |
+| Ethereum | ETH, USDC, USDT, DAI | Sepolia | ETH, USDC | 12 / 1 |
+| Polygon | POL (shown as MATIC), USDC, USDT, DAI | Polygon Amoy | POL, USDC | 64 / 1 |
+| Base | ETH, USDC | Base Sepolia | ETH, USDC | 3 / 1 |
+| Arbitrum | ETH, USDC, USDT, DAI | Arbitrum Sepolia | ETH, USDC | 3 / 1 |
+| Optimism | ETH, USDC, USDT, DAI | Optimism Sepolia | ETH, USDC | 3 / 1 |
 
-To start accepting payments, follow the [Quickstart](/quickstart) and see the [Integration Examples](/warp-pay/examples).
+Testnet USDC is Circle's testnet USDC. Payments from smart contract wallets (such as Safe) are supported for ERC-20 tokens.
 
-<Card title="Cross-Chain Simplicity" icon="link" href="/quickstart">
-  Customers pay with a supported token on a supported chain, and Warp handles pricing and verification. Developers integrate once — Warp manages the rest.
-</Card>
+## Session lifecycle
 
-<Card title="Fast, Trust-Minimized Settlement" icon="bolt" href="/warp-bridge/protocol">
-  Payments are verified on-chain before a session is marked complete. Zero-knowledge payment confirmation is on the roadmap and is designed to let merchants deliver digital goods without waiting for slow finality.
-</Card>
+| Status | Meaning |
+| --- | --- |
+| `pending` | Waiting for the customer to pay. |
+| `processing` | A transaction was submitted and Warp is verifying it. |
+| `completed` | The payment was verified. Fulfill the order. |
+| `failed` | The transaction did not pass verification. |
+| `expired` | No payment within 30 minutes of creation. |
 
-<Card title="Privacy Layer (Roadmap)" icon="user-shield" href="/products#pay-with-warp">
-  As Warp evolves, payments are planned to be routed through a privacy-preserving layer, designed to make transfers harder to link on-chain and keep details confidential for both users and businesses.
-</Card>
+`completed`, `failed` and `expired` each trigger a webhook: `payment.completed`, `payment.failed` and `payment.expired`.
 
-<Card title="Developer-First Architecture" icon="code" href="/api-reference/checkout-api/create-payment-session">
-  Warp offers a clean REST API designed for straightforward integration. Create a hosted checkout session in a single request and poll its status from your backend.
-</Card>
+The two URLs you can pass when creating a session control navigation only:
+
+- `return_url` — where the **Back to merchant** button on the payment success page sends the customer.
+- `cancel_url` — where the **Cancel and return** link on the checkout page sends the customer.
+
+Neither redirect proves a payment. Rely on the webhook or the session `status`.
+
+## Example
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.usewarp.net/v1/checkout/sessions \
+  -H "Authorization: Bearer $WARP_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "amount_usd": 25.00, "description": "Pro plan", "metadata": { "customer_id": "cus_42" } }'
+```
+
+```javascript Node.js
+const res = await fetch('https://api.usewarp.net/v1/checkout/sessions', {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${process.env.WARP_SECRET_KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({ amount_usd: 25.0, description: 'Pro plan', metadata: { customer_id: 'cus_42' } }),
+});
+const { checkout_url } = await res.json();
+```
+
+```python Python
+import os
+import requests
+
+res = requests.post(
+    "https://api.usewarp.net/v1/checkout/sessions",
+    headers={"Authorization": f"Bearer {os.environ['WARP_SECRET_KEY']}"},
+    json={"amount_usd": 25.00, "description": "Pro plan", "metadata": {"customer_id": "cus_42"}},
+    timeout=10,
+)
+checkout_url = res.json()["checkout_url"]
+```
+
+</CodeGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Take a test payment end to end.
+  </Card>
+  <Card title="Webhooks" icon="bell" href="/warp-pay/webhooks">
+    Verify signatures and handle retries.
+  </Card>
+  <Card title="Embedded checkout" icon="window" href="/warp-pay/embedded-checkout">
+    Show the checkout on your page with React, Vue or JavaScript.
+  </Card>
+  <Card title="SDKs" icon="cubes" href="/sdks/overview">
+    Node.js, React, Vue and JavaScript, with a step-by-step setup guide.
+  </Card>
+  <Card title="Integration examples" icon="code-branch" href="/warp-pay/examples">
+    Express, React and Python examples.
+  </Card>
+  <Card title="Checkout sessions API" icon="code" href="/api-reference/checkout-sessions/create">
+    Request and response reference.
+  </Card>
+</CardGroup>

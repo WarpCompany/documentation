@@ -1,0 +1,146 @@
+---
+title: "Vue SDK"
+sidebarTitle: "Vue"
+description: "Embed the Pay with Warp checkout in Vue 3 and Nuxt with @warpfi/vue."
+icon: "vuejs"
+---
+
+`@warpfi/vue` shows the hosted Warp checkout on your page: inline, in a modal or in a popup. It needs Vue 3.3 or later and works with Nuxt 3. The checkout mounts in the browser only, so it is safe with server-side rendering.
+
+[npm](https://www.npmjs.com/package/@warpfi/vue) · [GitHub](https://github.com/WarpCompany/warp-vue)
+
+## Install
+
+```bash
+npm install @warpfi/vue
+```
+
+Your server creates the session with the [Node.js SDK](/sdks/node) and returns its `checkout_url`. For a complete Nuxt walkthrough, see [Set up with examples](/sdks/setup).
+
+## Inline checkout
+
+```vue
+<script setup lang="ts">
+import { WarpCheckout, type WarpCheckoutError } from '@warpfi/vue'
+
+const props = defineProps<{ orderId: string }>()
+
+async function createCheckout(): Promise<string> {
+  const res = await fetch('/api/checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ orderId: props.orderId }),
+  })
+  if (!res.ok) throw new Error('Could not start checkout')
+  return (await res.json()).checkoutUrl
+}
+
+function onError(error: WarpCheckoutError) {
+  console.error(error.code, error.message)
+}
+</script>
+
+<template>
+  <WarpCheckout
+    :fetch-checkout-url="createCheckout"
+    theme="auto"
+    @complete="$router.push(`/orders/${orderId}`)"
+    @cancel="$router.push('/cart')"
+    @error="onError"
+  />
+</template>
+```
+
+If you already have a `checkout_url`, pass `:checkout-url` instead. Changing it replaces the checkout with the new session.
+
+## Modal button
+
+```vue
+<PayWithWarpButton :fetch-checkout-url="createCheckout" @complete="onComplete">
+  <template #default="{ loading }">{{ loading ? 'Loading...' : 'Pay with Warp' }}</template>
+</PayWithWarpButton>
+```
+
+The modal closes on Escape, the backdrop or its close button (emits `cancel` if the payment has not completed), after the customer cancels, and after the customer returns from the success page. `close` is emitted last every time.
+
+Use `mode="popup"` where your page cannot frame the checkout, or `mode="redirect"` to send the customer to the hosted page.
+
+## Composable
+
+```vue
+<script setup lang="ts">
+import { useWarpCheckout } from '@warpfi/vue'
+
+const { openModal, openPopup, close, status, sessionId, isOpen, error } = useWarpCheckout({
+  fetchCheckoutUrl: createCheckout,
+  onComplete: () => console.log('paid'),
+})
+</script>
+
+<template>
+  <button :disabled="isOpen" @click="openModal()">Pay</button>
+  <button :disabled="isOpen" @click="openPopup()">Pay in a new window</button>
+  <p v-if="status">Status: {{ status }} ({{ sessionId }})</p>
+  <p v-if="error">{{ error.message }}</p>
+</template>
+```
+
+`openModal` and `openPopup` accept options that override those given to `useWarpCheckout`, and resolve to the checkout instance or `null`. Call `openPopup` directly from a click handler. The checkout closes when the component unmounts.
+
+## Global registration
+
+```ts
+import { createApp } from 'vue'
+import { WarpPlugin } from '@warpfi/vue'
+import App from './App.vue'
+
+createApp(App).use(WarpPlugin).mount('#app')
+```
+
+In Nuxt, register it from a plugin:
+
+```ts plugins/warp.ts
+import { WarpPlugin } from '@warpfi/vue'
+
+export default defineNuxtPlugin((nuxtApp) => {
+  nuxtApp.vueApp.use(WarpPlugin)
+})
+```
+
+## Props and events
+
+| Prop | Component | Description |
+| --- | --- | --- |
+| `checkout-url` | `WarpCheckout` | `checkout_url` of a session created on your server |
+| `fetch-checkout-url` | both | `() => Promise<string>`. Required on `PayWithWarpButton` |
+| `theme` | both | `'light'`, `'dark'` or `'auto'` (default) |
+| `checkout-origin` | both | Self-hosted or staging checkout |
+| `mode` | `PayWithWarpButton` | `'modal'` (default), `'popup'` or `'redirect'` |
+| `disabled` | `PayWithWarpButton` | Disable the button |
+
+| Event | Payload | When |
+| --- | --- | --- |
+| `ready` | | The checkout loaded |
+| `status` | `CheckoutStatus` | On load and on every change |
+| `complete` | | The status became `completed` |
+| `cancel` | | The customer cancelled, or closed the modal or popup before paying |
+| `return` | | The customer clicked "Back to merchant" on the success page |
+| `error` | `WarpCheckoutError` | The checkout could not be opened |
+| `close` | | `PayWithWarpButton` only, modal and popup modes. The checkout closed |
+
+`useWarpCheckout` takes the same events as callbacks: `onReady`, `onStatus`, `onComplete`, `onCancel`, `onReturn`, `onError` and `onClose`.
+
+## Exports
+
+| Export | Description |
+| --- | --- |
+| `WarpCheckout` | Inline checkout component |
+| `PayWithWarpButton` | Button that opens the checkout in a modal, popup or by redirect |
+| `useWarpCheckout` | Composable returning `{ openModal, openPopup, close, status, sessionId, isOpen, error }` |
+| `WarpPlugin` | Registers both components globally |
+| `WarpCheckoutError` | Error class with a `code`, re-exported from `@warpfi/js` |
+| Types | `CheckoutStatus`, `CheckoutTheme`, `PayWithWarpMode`, `UseWarpCheckoutOptions`, `UseWarpCheckoutReturn` and more |
+
+<Warning>
+  Events are UI signals only. Fulfil orders from the `payment.completed` [webhook](/warp-pay/webhooks) or a server-side session lookup.
+</Warning>

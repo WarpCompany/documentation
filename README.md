@@ -12,17 +12,18 @@
 </p>
 
 <p align="center">
-  <a href="https://developer.usewarp.net"><img src="https://img.shields.io/badge/docs-developer.usewarp.net-B429FF" alt="Docs" /></a>
+  <a href="https://developer.usewarp.net"><img src="https://img.shields.io/badge/docs-developer.usewarp.net-9E1FAA" alt="Docs" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT" /></a>
 </p>
 
 ---
 
-Warp is privacy-preserving payment and cross-chain infrastructure for developers. This repository contains the guides, product overviews, and API reference for:
+Warp builds crypto payment and zero-knowledge infrastructure for developers. This repository contains the guides, product overviews, and API reference for:
 
-- **Pay With Warp** — accept crypto payments from any supported chain
-- **Warp Bridge** — move assets across chains
-- **ZK Proofs as a Service** and the **ZK Validator Network** _(coming soon)_
+- **Pay with Warp** — hosted crypto checkout on EVM chains
+- **ZK Proofs** _(beta)_ — build, deploy and verify Circom/Groth16 circuits
+- **Warp Verify** _(beta)_ — zero-knowledge attestations
+- **Warp Bridge** and the **ZK Validator Network** _(roadmap)_
 
 ## Local development
 
@@ -43,10 +44,13 @@ The preview runs at `http://localhost:3000`.
 | `index.mdx`        | Landing page                               |
 | `quickstart.mdx`   | Getting started guide                      |
 | `products.mdx`     | Product overview                           |
-| `warp-pay/`        | Pay With Warp guides and examples          |
-| `warp-bridge/`     | Warp Bridge guides and protocol design     |
-| `zkproofs/`        | ZK Proofs as a Service                     |
-| `zkvalidator/`     | ZK Validator Network                       |
+| `warp-pay/`        | Pay with Warp guides, embedded checkout, webhooks, examples |
+| `sdks/`            | SDK guides                                 |
+| `zkproofs/`        | ZK Proofs                                  |
+| `warp-verify/`     | Warp Verify                                |
+| `warp-bridge/`     | Warp Bridge design (roadmap)               |
+| `zkvalidator/`     | ZK Validator Network design (roadmap)      |
+| `api-reference/`   | API reference introduction                 |
 | `openapi.json`     | OpenAPI spec that powers the API reference |
 | `images/`, `logo/` | Static assets                              |
 

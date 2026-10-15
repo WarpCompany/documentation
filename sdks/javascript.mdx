@@ -1,0 +1,156 @@
+---
+title: "JavaScript SDK"
+sidebarTitle: "JavaScript"
+description: "Embed the Pay with Warp checkout on any page with @warpfi/js: ES module, script tag or the warp-checkout web component."
+icon: "js"
+---
+
+`@warpfi/js` shows the hosted Warp checkout on any page, with no framework and no dependencies. Use it as an ES module, from a `<script>` tag, or as the `<warp-checkout>` web component. The React and Vue SDKs are built on it.
+
+[npm](https://www.npmjs.com/package/@warpfi/js) · [GitHub](https://github.com/WarpCompany/warp-js) · [CDN](https://cdn.jsdelivr.net/npm/@warpfi/js@0/dist/warp.global.js)
+
+## Install
+
+<CodeGroup>
+
+```bash npm
+npm install @warpfi/js
+```
+
+```html CDN
+<script src="https://cdn.jsdelivr.net/npm/@warpfi/js@0/dist/warp.global.js"></script>
+```
+
+</CodeGroup>
+
+Your server creates the session with the [Node.js SDK](/sdks/node) and returns its `checkout_url`. For a complete Express walkthrough, see [Set up with examples](/sdks/setup).
+
+## Inline checkout
+
+```ts
+import { mountCheckout } from '@warpfi/js'
+
+async function fetchCheckoutUrl(): Promise<string> {
+  const res = await fetch('/api/checkout', { method: 'POST' })
+  if (!res.ok) throw new Error(`Checkout request failed: ${res.status}`)
+  return (await res.json()).checkoutUrl
+}
+
+const checkout = await mountCheckout('#checkout', {
+  fetchCheckoutUrl,
+  onComplete: () => (window.location.href = '/thanks'),
+  onError: (error) => console.error(error.code, error.message),
+})
+
+// Later, for example when navigating away:
+checkout.destroy()
+```
+
+You can pass `checkoutUrl` instead of `fetchCheckoutUrl` if you already have it. The iframe resizes to its content.
+
+## Script tag
+
+The CDN build exposes `window.Warp` (`mountCheckout`, `openCheckoutModal`, `openCheckoutPopup`) and registers `<warp-checkout>`.
+
+```html
+<div id="checkout"></div>
+<script src="https://cdn.jsdelivr.net/npm/@warpfi/js@0/dist/warp.global.js"></script>
+<script>
+  Warp.mountCheckout('#checkout', {
+    fetchCheckoutUrl: () =>
+      fetch('/api/checkout', { method: 'POST' })
+        .then((res) => res.json())
+        .then((data) => data.checkoutUrl),
+    onComplete: () => (window.location.href = '/thanks'),
+  })
+</script>
+```
+
+## Modal
+
+```ts
+import { openCheckoutModal } from '@warpfi/js'
+
+document.querySelector('#pay')!.addEventListener('click', () => {
+  openCheckoutModal({
+    fetchCheckoutUrl,
+    theme: 'dark',
+    onComplete: () => showThankYou(),
+    onClose: () => console.log('Checkout closed'),
+  }).catch(() => {})
+})
+```
+
+The modal closes on Escape, a backdrop click or the close button (calling `onCancel` if the payment has not completed), and after `onCancel` or `onReturn` from the checkout page. `onClose` is called last.
+
+## Popup
+
+Use a popup when the checkout cannot run in a frame on your page. Call it directly in a click handler: the window opens immediately and loads the checkout once `fetchCheckoutUrl` resolves.
+
+```ts
+import { openCheckoutPopup } from '@warpfi/js'
+
+button.addEventListener('click', () => {
+  openCheckoutPopup({
+    fetchCheckoutUrl,
+    onComplete: () => showThankYou(),
+    onError: (error) => {
+      if (error.code === 'popup_blocked') window.location.href = '/checkout'
+    },
+  }).catch(() => {})
+})
+```
+
+If your page sends `Cross-Origin-Opener-Policy`, use `same-origin-allow-popups` so the popup can report back.
+
+## Web component
+
+```html
+<script type="module">
+  import '@warpfi/js/element'
+</script>
+
+<warp-checkout checkout-url="https://checkout.usewarp.net/session/ps_..." theme="auto"></warp-checkout>
+
+<script type="module">
+  const el = document.querySelector('warp-checkout')
+  el.addEventListener('warp:complete', () => (window.location.href = '/thanks'))
+  el.addEventListener('warp:error', (event) => console.error(event.detail.error))
+</script>
+```
+
+Attributes: `checkout-url` (required), `theme` and `checkout-origin`. Changing an attribute remounts the checkout; removing the element tears it down. Events: `warp:ready`, `warp:status` (`detail.status`), `warp:complete`, `warp:cancel`, `warp:return` and `warp:error` (`detail.error`).
+
+## Options
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `checkoutUrl` | `string` | `checkout_url` of a session created on your server |
+| `fetchCheckoutUrl` | `() => Promise<string>` | Creates a session on your server and returns its `checkout_url` |
+| `theme` | `'light' \| 'dark' \| 'auto'` | Default `auto` |
+| `checkoutOrigin` | `string` | Self-hosted or staging checkout. Default `https://checkout.usewarp.net` |
+| `signal` | `AbortSignal` | Cancels a pending setup |
+| `onReady`, `onStatus`, `onComplete`, `onCancel`, `onReturn`, `onClose`, `onError` | | See [Events](/warp-pay/embedded-checkout#events) |
+
+Each function resolves to a `CheckoutInstance` with `sessionId`, `status` and an idempotent `destroy()`. Setup errors are passed to `onError` and also reject the promise.
+
+## Exports
+
+| Export | Description |
+| --- | --- |
+| `mountCheckout(container, options)` | Inline checkout in an element or CSS selector |
+| `openCheckoutModal(options)` | Checkout in a modal overlay |
+| `openCheckoutPopup(options)` | Checkout in a popup window. Call from a user gesture |
+| `parseCheckoutUrl(url, checkoutOrigin?)` | Validates a checkout URL and returns `{ url, sessionId }` |
+| `isWarpCheckoutMessage(data)` | Type guard for checkout messages |
+| `WarpCheckoutError` | Error class with a `code` |
+| `DEFAULT_CHECKOUT_ORIGIN` | `https://checkout.usewarp.net` |
+| `@warpfi/js/element` | Registers `<warp-checkout>`. Exports `WarpCheckoutElement` and `defineWarpCheckoutElement(tagName?)` |
+
+## Security
+
+The SDK accepts a message only from `checkoutOrigin`, from the exact iframe or popup it opened, with the expected shape, protocol version and session id. The iframe is sandboxed so it cannot navigate your page.
+
+<Warning>
+  Callbacks are UI signals only: anyone can call them from the browser console. Fulfil orders from the `payment.completed` [webhook](/warp-pay/webhooks) or a server-side session lookup.
+</Warning>

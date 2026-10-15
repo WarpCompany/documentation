@@ -1,0 +1,234 @@
+---
+title: "Embedded checkout"
+sidebarTitle: "Embedded checkout"
+description: "Show the Pay with Warp checkout on your own page with React, Vue or plain JavaScript."
+icon: "window"
+---
+
+The embedded checkout shows the hosted Warp checkout inside your page, in a modal, or in a popup, instead of redirecting the customer. It is the same checkout page, so wallet connection, quotes and on-chain verification work exactly as with a redirect.
+
+| Package | Use it for | Links |
+| --- | --- | --- |
+| `@warpfi/react` | React 18+ and Next.js | [Guide](/sdks/react) · [npm](https://www.npmjs.com/package/@warpfi/react) · [GitHub](https://github.com/WarpCompany/warp-react) |
+| `@warpfi/vue` | Vue 3.3+ and Nuxt | [Guide](/sdks/vue) · [npm](https://www.npmjs.com/package/@warpfi/vue) · [GitHub](https://github.com/WarpCompany/warp-vue) |
+| `@warpfi/js` | Any other site: ES module, `<script>` tag or the `<warp-checkout>` web component | [Guide](/sdks/javascript) · [npm](https://www.npmjs.com/package/@warpfi/js) · [GitHub](https://github.com/WarpCompany/warp-js) |
+
+For a step-by-step setup with full Next.js, Nuxt and Express examples, see [Set up the SDKs](/sdks/setup).
+
+<Warning>
+  Events from the embedded checkout are UI signals only. Fulfil orders from the `payment.completed` [webhook](/warp-pay/webhooks) or by [retrieving the session](/api-reference/checkout-sessions/retrieve) on your server.
+</Warning>
+
+## How it works
+
+<Steps>
+  <Step title="Create a session on your server">
+    Create the session with your secret key, as usual, and set `return_url` or `cancel_url` to a page on the site that embeds the checkout. Return `checkout_url` to the browser.
+  </Step>
+  <Step title="Embed it">
+    Pass the URL (or a function that fetches it) to the component. It loads the checkout in an iframe, modal or popup.
+  </Step>
+  <Step title="React to events">
+    The checkout reports `ready`, status changes, completion, cancel and return. Use them to update your UI.
+  </Step>
+</Steps>
+
+## Server
+
+The browser never sees your secret key. This example uses the [Node.js SDK](/sdks/node):
+
+```ts
+import Warp from '@warpfi/node'
+
+const warp = new Warp(process.env.WARP_SECRET_KEY!)
+
+app.post('/api/checkout', async (req, res) => {
+  const order = await getOrder(req.body.orderId) // amount from your records, never from the browser
+  const session = await warp.checkout.sessions.create({
+    amount_usd: order.totalUsd,
+    metadata: { order_id: order.id },
+    return_url: `https://example.com/orders/${order.id}`,
+    cancel_url: 'https://example.com/cart',
+  })
+  res.json({ checkoutUrl: session.checkout_url })
+})
+```
+
+## Client
+
+<Tabs>
+  <Tab title="React">
+    ```bash
+    npm install @warpfi/react
+    ```
+
+    ```tsx
+    'use client'
+
+    import { WarpCheckout, PayWithWarpButton } from '@warpfi/react'
+
+    async function createCheckout(orderId: string): Promise<string> {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      })
+      if (!res.ok) throw new Error('Could not start checkout')
+      return (await res.json()).checkoutUrl
+    }
+
+    // Inline
+    export function Checkout({ orderId }: { orderId: string }) {
+      return (
+        <WarpCheckout
+          fetchCheckoutUrl={() => createCheckout(orderId)}
+          onComplete={() => console.log('Paid, waiting for the webhook')}
+          onCancel={() => history.back()}
+        />
+      )
+    }
+
+    // Modal (or mode="popup" / mode="redirect")
+    export function BuyButton({ orderId }: { orderId: string }) {
+      return <PayWithWarpButton fetchCheckoutUrl={() => createCheckout(orderId)} />
+    }
+    ```
+
+    `useWarpCheckout(options)` returns `openModal`, `openPopup`, `close`, `status`, `sessionId`, `isOpen` and `error` for custom buttons.
+  </Tab>
+  <Tab title="Vue">
+    ```bash
+    npm install @warpfi/vue
+    ```
+
+    ```vue
+    <script setup lang="ts">
+    import { WarpCheckout, PayWithWarpButton } from '@warpfi/vue'
+
+    const props = defineProps<{ orderId: string }>()
+
+    async function createCheckout(): Promise<string> {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: props.orderId }),
+      })
+      if (!res.ok) throw new Error('Could not start checkout')
+      return (await res.json()).checkoutUrl
+    }
+
+    function onPaid() {
+      console.log('Paid, waiting for the webhook')
+    }
+    </script>
+
+    <template>
+      <!-- Inline -->
+      <WarpCheckout :fetch-checkout-url="createCheckout" @complete="onPaid" @cancel="$router.back()" />
+
+      <!-- Modal (or mode="popup" / mode="redirect") -->
+      <PayWithWarpButton :fetch-checkout-url="createCheckout" />
+    </template>
+    ```
+
+    `useWarpCheckout(options)` returns `openModal`, `openPopup`, `close` and the refs `status`, `sessionId`, `isOpen` and `error`. `WarpPlugin` registers both components globally.
+  </Tab>
+  <Tab title="JavaScript">
+    ```bash
+    npm install @warpfi/js
+    ```
+
+    ```ts
+    import { mountCheckout, openCheckoutModal } from '@warpfi/js'
+
+    async function fetchCheckoutUrl(): Promise<string> {
+      const res = await fetch('/api/checkout', { method: 'POST' })
+      return (await res.json()).checkoutUrl
+    }
+
+    // Inline
+    const checkout = await mountCheckout('#checkout', {
+      fetchCheckoutUrl,
+      onComplete: () => (window.location.href = '/thanks'),
+    })
+
+    // Modal
+    document.querySelector('#pay')!.addEventListener('click', () => {
+      openCheckoutModal({ fetchCheckoutUrl, onComplete: showThankYou }).catch(() => {})
+    })
+    ```
+  </Tab>
+  <Tab title="Script tag">
+    ```html
+    <div id="checkout"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@warpfi/js@0/dist/warp.global.js"></script>
+    <script>
+      Warp.mountCheckout('#checkout', {
+        fetchCheckoutUrl: () =>
+          fetch('/api/checkout', { method: 'POST' }).then((r) => r.json()).then((d) => d.checkoutUrl),
+        onComplete: () => (window.location.href = '/thanks'),
+      })
+    </script>
+    ```
+
+    The script also registers a web component: `<warp-checkout checkout-url="..." theme="auto">`, which dispatches `warp:ready`, `warp:status`, `warp:complete`, `warp:cancel`, `warp:return` and `warp:error`.
+  </Tab>
+</Tabs>
+
+## Display modes
+
+| Mode | Function | Notes |
+| --- | --- | --- |
+| Inline | `mountCheckout` / `<WarpCheckout>` | An iframe in your layout that resizes to its content. |
+| Modal | `openCheckoutModal` / `PayWithWarpButton` | A full-screen overlay. Closes on Escape, backdrop click, the close button, and after the customer returns. |
+| Popup | `openCheckoutPopup` / `mode="popup"` | A new window, for pages that cannot frame the checkout. Must be opened from a click. |
+| Redirect | `mode="redirect"` | Sends the customer to `checkout_url`, like a plain integration. |
+
+All modes accept `theme` (`light`, `dark` or `auto`). Match it to your page so the iframe background blends in.
+
+## Events
+
+| Callback | When |
+| --- | --- |
+| `onReady` | The checkout loaded. |
+| `onStatus(status)` | On load and on every change: `pending`, `processing`, `completed`, `failed`, `expired`. |
+| `onComplete` | The status became `completed` (once). |
+| `onCancel` | The customer clicked **Cancel and return**, or closed the modal or popup before paying. |
+| `onReturn` | The customer clicked **Back to merchant** on the success page. |
+| `onClose` | A modal or popup closed, for any reason. |
+| `onError(error)` | A `WarpCheckoutError`. |
+
+In embed mode the cancel and return buttons send events instead of navigating, so your page decides what happens next.
+
+| Error code | Meaning |
+| --- | --- |
+| `invalid_checkout_url` | The URL is not a Warp checkout session URL. |
+| `fetch_failed` | Your `fetchCheckoutUrl` threw or returned no URL. |
+| `popup_blocked` | The browser blocked the popup. |
+| `load_failed` | The checkout did not load within 15 seconds, usually because framing is not allowed for this origin. |
+| `destroyed` | The checkout was closed before it finished loading. |
+
+## Allowed origins
+
+The checkout can only be framed by, and only sends events to, the origins of the session's `return_url` and `cancel_url`. Testnet sessions (created with an `sk_test_` key) also allow `http://localhost` and `http://127.0.0.1` on any port, for local development.
+
+- Set `return_url` or `cancel_url` to a page on the site that embeds the checkout. A session without either cannot be embedded; redirect to `checkout_url` instead.
+- If your site sends a Content-Security-Policy, add `frame-src https://checkout.usewarp.net`.
+- For popups, do not send `Cross-Origin-Opener-Policy: same-origin`; use `same-origin-allow-popups`.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Webhooks" icon="bell" href="/warp-pay/webhooks">
+    Confirm payments on your server.
+  </Card>
+  <Card title="Node.js SDK" icon="node-js" href="/sdks/node">
+    Create sessions and verify webhooks.
+  </Card>
+  <Card title="Set up with examples" icon="screwdriver-wrench" href="/sdks/setup">
+    Full Next.js, Nuxt and Express walkthroughs.
+  </Card>
+  <Card title="SDK overview" icon="cubes" href="/sdks/overview">
+    Every package with npm and GitHub links.
+  </Card>
+</CardGroup>

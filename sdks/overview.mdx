@@ -1,0 +1,78 @@
+---
+title: "SDKs"
+sidebarTitle: "Overview"
+description: "Official Warp SDKs for Node.js, React, Vue and plain JavaScript, with links to npm and GitHub."
+icon: "cubes"
+---
+
+Warp has one server SDK and three client SDKs. The server SDK creates checkout sessions and verifies webhooks with your secret key. The client SDKs show the hosted checkout on your own page, inline, in a modal or in a popup.
+
+<Warning>
+  Your secret key stays on your server. The client SDKs never need it: they load a `checkout_url` that your server created.
+</Warning>
+
+## Packages
+
+| Package | Runs on | Use it to | Links |
+| --- | --- | --- | --- |
+| `@warpfi/node` | Node.js 18+ (server) | Create and list checkout sessions, verify webhooks, verify ZK proofs | [Guide](/sdks/node) · [npm](https://www.npmjs.com/package/@warpfi/node) · [GitHub](https://github.com/WarpCompany/warp-node) |
+| `@warpfi/react` | React 18+, Next.js | Embedded checkout component, modal button and hook | [Guide](/sdks/react) · [npm](https://www.npmjs.com/package/@warpfi/react) · [GitHub](https://github.com/WarpCompany/warp-react) |
+| `@warpfi/vue` | Vue 3.3+, Nuxt 3 | Embedded checkout component, modal button and composable | [Guide](/sdks/vue) · [npm](https://www.npmjs.com/package/@warpfi/vue) · [GitHub](https://github.com/WarpCompany/warp-vue) |
+| `@warpfi/js` | Any browser page | Embedded checkout without a framework: ES module, `<script>` tag or `<warp-checkout>` web component | [Guide](/sdks/javascript) · [npm](https://www.npmjs.com/package/@warpfi/js) · [GitHub](https://github.com/WarpCompany/warp-js) |
+
+`@warpfi/react` and `@warpfi/vue` are built on `@warpfi/js` and install it for you. All packages are MIT licensed, written in TypeScript and ship their own types.
+
+## Which do I need?
+
+Most integrations use two packages: `@warpfi/node` on the server and one client SDK in the browser.
+
+<CardGroup cols={2}>
+  <Card title="Set up with examples" icon="screwdriver-wrench" href="/sdks/setup">
+    Step-by-step setup with full Next.js, Nuxt and Express examples.
+  </Card>
+  <Card title="Node.js" icon="node-js" href="/sdks/node">
+    Server SDK for sessions, webhooks and ZK proofs.
+  </Card>
+  <Card title="React" icon="react" href="/sdks/react">
+    `<WarpCheckout>`, `<PayWithWarpButton>` and `useWarpCheckout`.
+  </Card>
+  <Card title="Vue" icon="vuejs" href="/sdks/vue">
+    `<WarpCheckout>`, `<PayWithWarpButton>` and `useWarpCheckout`.
+  </Card>
+  <Card title="JavaScript" icon="js" href="/sdks/javascript">
+    `mountCheckout`, modal, popup and the `<warp-checkout>` element.
+  </Card>
+  <Card title="Embedded checkout" icon="window" href="/warp-pay/embedded-checkout">
+    How embedding works, display modes, events and allowed origins.
+  </Card>
+</CardGroup>
+
+If you only redirect customers to the hosted checkout, you do not need a client SDK: create the session with `@warpfi/node` and redirect to `checkout_url`. For other server languages, call the [REST API](/api-reference/introduction) directly.
+
+## Install
+
+<CodeGroup>
+
+```bash npm
+npm install @warpfi/node @warpfi/react   # or @warpfi/vue, @warpfi/js
+```
+
+```bash pnpm
+pnpm add @warpfi/node @warpfi/react
+```
+
+```bash yarn
+yarn add @warpfi/node @warpfi/react
+```
+
+```html CDN
+<script src="https://cdn.jsdelivr.net/npm/@warpfi/js@0/dist/warp.global.js"></script>
+```
+
+</CodeGroup>
+
+The CDN build of `@warpfi/js` exposes `window.Warp` and registers the `<warp-checkout>` element, for pages without a build step.
+
+## Versioning
+
+The SDKs follow [semantic versioning](https://semver.org). While they are on `0.x`, minor versions can contain breaking changes, so pin a minor version (`~0.1.0`) or the CDN major (`@0`) and read the release notes on GitHub before upgrading.

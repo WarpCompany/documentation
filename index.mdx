@@ -1,112 +1,57 @@
 ---
 title: "Welcome to Warp"
-description: "We build intuitive DeFi tools that help people work smarter, move faster, and stay focused on what matters."
+sidebarTitle: "Welcome"
+description: "Warp builds crypto payment and zero-knowledge infrastructure for developers: hosted checkout, ZK Proofs and Warp Verify."
+icon: "house"
 mode: "wide"
 ---
 
 <video autoPlay muted loop playsInline className="w-full h-auto rounded-xl" src="/videos/demo.mp4" />
 
-## Unified Cross-Chain Infrastructure for DeFi
+Warp gives developers APIs and tools to accept crypto payments on EVM chains and to build, deploy and verify zero-knowledge proofs. Start with Pay with Warp to take payments, or use the Warp Platform to work with ZK circuits.
 
-Warp is building the infrastructure layer that makes multi-chain crypto feel like a single, seamless network. Our mission is to reduce the fragmentation, complexity, and privacy gaps that affect today's blockchain ecosystems.
-
-Instead of forcing users to navigate dozens of chains, swap between incompatible tokens, or sacrifice privacy for convenience, Warp aims to provide a unified experience built on solver-based liquidity networks, deterministic settlement contracts, and zero-knowledge technology.
-
-Whether you're a developer building cross-chain applications, a merchant accepting crypto payments, or a user transferring assets between networks, Warp is designed to deliver speed, simplicity, and progressively stronger privacy at every layer.
-
-<Note>
-  Warp is under active development. Features marked **Coming Soon**, **Planned**, or **Roadmap** are not yet available, and their descriptions reflect design goals rather than current behavior.
-</Note>
-
----
-
-## Core Ecosystem
-
-Warp's ecosystem is built on four interconnected components. Each is designed to work independently, and to work even better when combined:
+## Products
 
 <CardGroup cols={2}>
-  <Card title="Warp Bridge" icon="bridge" href="/warp-bridge/introduction">
-    Fast, no-KYC cross-chain transfers powered by solver networks and deterministic settlement contracts. Designed to move assets between chains without wrapped tokens or custodial bridges.
+  <Card title="Pay with Warp" icon="credit-card" href="/warp-pay">
+    Hosted crypto checkout. Create a session from your server, redirect the customer, and get a webhook when the payment is verified on-chain.
   </Card>
-  <Card title="Pay With Warp" icon="credit-card" href="/warp-pay/index">
-    Universal crypto checkout that accepts any supported token on any supported chain. Merchants receive the asset they choose while customers pay with what they have.
+  <Card title="ZK Proofs (Beta)" icon="shield-check" href="/zkproofs/introduction">
+    Write and compile Circom circuits in the Warp Platform, deploy a Groth16 verifier to a testnet, and verify proofs on-chain or through the API.
   </Card>
-  <Card title="ZK Proofs as a Service (Beta)" icon="shield-check" href="/zkproofs/introduction">
-    Write, compile, and deploy zero-knowledge-powered smart contracts without writing Solidity or building circuits by hand.
+  <Card title="Warp Verify (Beta)" icon="certificate" href="/warp-verify/overview">
+    Issue zero-knowledge attestations for ownership, compliance and provenance, and let anyone check them with a public endpoint.
   </Card>
-  <Card title="ZK Validator Network (Coming Soon)" icon="network-wired" href="/zkvalidator/introduction">
-    A planned decentralized proof verification layer designed to support fast settlement, privacy routing, and verifiable computation across Warp's ecosystem.
+  <Card title="Roadmap" icon="map" href="/warp-bridge/introduction">
+    Warp Bridge and the ZK Validator Network are design proposals. They are not yet available.
   </Card>
 </CardGroup>
 
----
+## How it fits together
 
-## Why Warp?
+- **Warp Platform** ([platform.usewarp.net](https://platform.usewarp.net)) is where you create projects, get API keys, configure webhooks and edit ZK circuits.
+- **Warp API** (`https://api.usewarp.net`) is the public REST API for checkout sessions, ZK proof verification and attestation checks. See the [API reference](/api-reference/introduction).
+- **Hosted checkout** (`https://checkout.usewarp.net`) is the page your customers use to connect a wallet and pay.
 
-### Universal Access
-
-One integration is designed to unlock support for many blockchains. Users and developers should not need to worry about chain selection, token compatibility, or manual bridging.
-
-### Fast Settlement
-
-Solvers fulfill transfers from their own liquidity on the destination chain, so users are not left waiting on slow cross-chain messaging. On the roadmap, zero-knowledge proofs are intended to enable near-real-time payment confirmation.
-
-### Privacy by Design _(Roadmap)_
-
-As Warp evolves, transfers, payments, and proofs are planned to flow through privacy-preserving routing layers, designed to make transactions harder to link on-chain and keep their details confidential.
-
-### Built for Developers
-
-Clean REST APIs and smart contract primitives designed to abstract complexity while preserving flexibility and control.
-
----
-
-## Our Vision
-
-A private, interoperable, cross-chain layer that feels as seamless as using a single blockchain, without users ever needing to notice the complexity underneath. Use Warp's components individually, or combine them to build secure cross-chain experiences.
-
----
-
-## Get Started
+## Next steps
 
 <CardGroup cols={2}>
-  <Card title="Quickstart Guide" icon="rocket" href="/quickstart">
-    Get up and running with Warp. Learn how to accept your first cross-chain payment.
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Accept your first test payment in a few minutes.
   </Card>
-  <Card title="Explore Warp Bridge" icon="bridge-water" href="/warp-bridge/introduction">
-    Dive into the architecture, protocol design, and integration methods for Warp's cross-chain transfer system.
+  <Card title="API reference" icon="code" href="/api-reference/introduction">
+    Base URL, authentication, errors and every endpoint.
   </Card>
-  <Card title="API Reference" icon="code" href="/api-reference/checkout-api/create-payment-session">
-    API documentation for payment sessions, organizations, and ZK proofs.
+  <Card title="Webhooks" icon="bell" href="/warp-pay/webhooks">
+    Get notified when a payment completes, fails or expires.
   </Card>
-  <Card title="Product Overview" icon="cubes" href="/products">
-    Learn more about each component of the Warp ecosystem and how they work together.
+  <Card title="SDKs" icon="cubes" href="/sdks/overview">
+    Node.js, React, Vue and JavaScript packages.
   </Card>
-</CardGroup>
-
----
-
-## Developer Resources
-
-Everything you need to build with Warp:
-
-<CardGroup cols={2}>
-  <Card title="Integration Examples" icon="code-branch" href="/warp-pay/examples">
-    Illustrative code samples showing how to integrate Pay With Warp into storefronts and backends.
+  <Card title="Embedded checkout" icon="window" href="/warp-pay/embedded-checkout">
+    Show the checkout on your own page.
   </Card>
-  <Card title="Protocol Deep Dive" icon="microscope" href="/warp-bridge/protocol">
-    Understand Warp Bridge's technical architecture, security model, and settlement mechanisms.
-  </Card>
-  <Card title="Use Cases" icon="lightbulb" href="/warp-bridge/usecases">
-    Explore the integration paths planned for payments, liquidity routing, and cross-chain automation.
-  </Card>
-  <Card title="Warp Platform" icon="laptop-code" href="https://platform.usewarp.net">
-    Create an account, generate API keys, and manage your projects.
+  <Card title="Product overview" icon="cubes" href="/products">
+    What is live, what is in beta and what is on the roadmap.
   </Card>
 </CardGroup>
-
----
-
-<Card title="Join the Warp Ecosystem" icon="users" horizontal href="https://usewarp.net">
-  Warp is building toward a truly interoperable, private, and accessible crypto future. Whether you're building a DeFi protocol, accepting payments, or exploring ZK applications, follow along at usewarp.net and share your feedback.
-</Card>

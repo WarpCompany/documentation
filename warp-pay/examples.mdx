@@ -1,85 +1,78 @@
 ---
-title: "Integration Examples"
-description: "Illustrative code samples for integrating Pay With Warp into your applications."
+title: "Pay with Warp integration examples"
+sidebarTitle: "Examples"
+description: "Example Express, React and Python integrations that create checkout sessions server-side and confirm payments."
+icon: "code-branch"
 ---
 
-## Pay With Warp Examples
-
-This page provides illustrative code examples for integrating Pay With Warp into common application types using the [Checkout API](/api-reference/checkout-api/create-payment-session). They are intended as starting points — adapt error handling, persistence, and security to your own requirements before using them in production.
-
-<Note>
-  Official SDKs are coming soon. These examples call the REST API directly using `fetch` (JavaScript) and `requests` (Python). Warp Bridge API examples will be added when the Bridge API becomes available.
-</Note>
+These examples show common Pay with Warp integrations. They are starting points — add your own persistence, error handling and logging before using them in production.
 
 <Warning>
-  Always create payment sessions on your server, using an amount looked up from your own records. Never trust an amount sent by the browser.
+  Create sessions on your server with your secret key, using an amount from your own records. Never send the secret key to the browser and never trust an amount sent by the browser.
 </Warning>
 
----
+<Tip>
+  These examples call the REST API with `fetch` and `requests`. In Node.js you can use the [Node.js SDK](/sdks/node) instead, and to show the checkout on your own page see [Embedded checkout](/warp-pay/embedded-checkout). [Set up the SDKs](/sdks/setup) has full Next.js, Nuxt and Express examples.
+</Tip>
 
-## Example 1: Creating a Payment Session (Node.js)
+## Prerequisites
 
-This server-side endpoint creates a payment session with [Create payment session](/api-reference/checkout-api/create-payment-session) and returns the hosted `checkout_url` to the browser.
+- A Warp project and its secret key in `WARP_SECRET_KEY` (`sk_test_...` while testing).
+- A webhook URL and signing secret configured in the Warp Platform (for the webhook examples). See [Webhooks](/warp-pay/webhooks).
 
-```javascript
+## Create a session from an Express backend
+
+This endpoint looks up the order, creates a checkout session and returns the hosted `checkout_url` to the browser.
+
+```javascript server.js
 import express from 'express';
 
-const CHECKOUT_API = 'https://checkout.usewarp.net/api';
+const WARP_API = 'https://api.usewarp.net/v1';
 
 const app = express();
-app.use(express.json());
+app.use('/api', express.json());
 
 app.post('/api/checkout', async (req, res) => {
-  const { orderId } = req.body;
+  const order = await getOrder(req.body.orderId); // your own data layer
+  if (!order) return res.status(404).json({ error: 'Order not found' });
 
-  try {
-    const order = await getOrderFromDatabase(orderId); // your own data layer
-    if (!order) {
-      return res.status(404).json({ error: 'Order not found' });
-    }
+  const warpRes = await fetch(`${WARP_API}/checkout/sessions`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.WARP_SECRET_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      amount_usd: order.totalUsd, // e.g. 99.99
+      description: `Order #${order.id}`,
+      metadata: { order_id: order.id },
+      return_url: `https://example.com/orders/${order.id}`,
+      cancel_url: 'https://example.com/cart',
+    }),
+  });
 
-    const warpRes = await fetch(`${CHECKOUT_API}/sessions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        public_key: process.env.WARP_PUBLIC_KEY, // pk_...
-        amount_usd: order.totalUsd,               // e.g. 99.99
-        description: `Order #${orderId}`,
-        metadata: { orderId },
-        return_url: `https://yourstore.com/orders/${orderId}/success`,
-        cancel_url: `https://yourstore.com/orders/${orderId}/cancel`
-      })
-    });
-
-    if (!warpRes.ok) {
-      throw new Error(`Warp returned HTTP ${warpRes.status}`);
-    }
-
-    const session = await warpRes.json(); // { session_id, checkout_url, expires_at }
-    await saveSessionId(orderId, session.session_id); // remember which session belongs to which order
-
-    res.json({ checkoutUrl: session.checkout_url });
-  } catch (error) {
-    console.error('Payment session creation failed:', error);
-    res.status(502).json({ error: 'Could not create payment session' });
+  if (!warpRes.ok) {
+    const { error } = await warpRes.json();
+    console.error('Warp error:', error.code, error.message);
+    return res.status(502).json({ error: 'Could not start checkout' });
   }
+
+  const session = await warpRes.json();
+  await saveSessionId(order.id, session.id);
+  res.json({ checkoutUrl: session.checkout_url });
 });
 
-app.listen(3000, () => {
-  console.log('Server running on port 3000');
-});
+app.listen(3000);
 ```
 
----
+## Add a checkout button in React
 
-## Example 2: Payment Checkout Button (React)
+The button calls your backend (above), which returns the hosted checkout URL. The secret key never reaches the browser.
 
-This example adds a Pay With Warp button to a React storefront. The button calls your own backend (Example 1), which creates the session and returns the hosted checkout URL.
-
-```jsx
+```jsx CheckoutButton.jsx
 import { useState } from 'react';
 
-function CheckoutButton({ orderId }) {
+export default function CheckoutButton({ orderId }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -90,12 +83,11 @@ function CheckoutButton({ orderId }) {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId })
+        body: JSON.stringify({ orderId }),
       });
       if (!res.ok) throw new Error('Could not start checkout');
-
       const { checkoutUrl } = await res.json();
-      window.location.assign(checkoutUrl); // Redirect to Warp's hosted checkout
+      window.location.assign(checkoutUrl);
     } catch (err) {
       setError(err.message);
       setLoading(false);
@@ -103,218 +95,104 @@ function CheckoutButton({ orderId }) {
   }
 
   return (
-    <div className="checkout-container">
+    <div>
       <button onClick={handleCheckout} disabled={loading}>
-        {loading ? 'Redirecting…' : 'Pay With Warp'}
+        {loading ? 'Redirecting...' : 'Pay with Warp'}
       </button>
-      {error && <p className="error">{error}</p>}
+      {error && <p role="alert">{error}</p>}
     </div>
   );
 }
-
-export default CheckoutButton;
 ```
 
----
+## Confirm a payment on the return page
 
-## Example 3: Verifying a Payment Before Fulfillment (Node.js)
-
-When the customer returns to your `return_url`, confirm the payment server-side with [Get session status](/api-reference/checkout-api/get-session-status) before fulfilling the order. The redirect alone is not proof of payment.
+Webhooks are the primary signal, but when the customer lands on your `return_url` you can also check the session directly before showing a confirmation.
 
 ```javascript
-const CHECKOUT_API = 'https://checkout.usewarp.net/api';
-
-async function getSessionStatus(sessionId) {
-  const res = await fetch(`${CHECKOUT_API}/status/${encodeURIComponent(sessionId)}`);
-  if (!res.ok) {
-    throw new Error(`Failed to fetch session status: HTTP ${res.status}`);
-  }
-  return res.json(); // { session_id, status, verification_step, tx_hash, verified_at, completed_at }
-}
-
-async function waitForPayment(sessionId, { intervalMs = 3000, timeoutMs = 10 * 60 * 1000 } = {}) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    const session = await getSessionStatus(sessionId);
-    if (session.status === 'completed' || session.status === 'failed') {
-      return session;
-    }
-    await new Promise((resolve) => setTimeout(resolve, intervalMs));
-  }
-  throw new Error(`Timed out waiting for session ${sessionId}`);
-}
-
-// Called from your return_url handler or a background job
-async function fulfillIfPaid(orderId) {
-  const sessionId = await getSessionIdForOrder(orderId); // saved in Example 1
-  const session = await waitForPayment(sessionId);
-
-  if (session.status !== 'completed') {
-    await updateOrderStatus(orderId, 'payment_failed');
-    return false;
-  }
-
-  await updateOrderStatus(orderId, 'paid', { txHash: session.tx_hash });
-  await fulfillOrder(orderId);
-  return true;
-}
-```
-
----
-
-## Example 4: Webhook Handler for Payment Events (Coming Soon)
-
-<Note>
-  Webhooks are coming soon and are not yet part of the [API Reference](/api-reference/checkout-api/create-payment-session). The event names, payload fields, and `x-warp-signature` header below illustrate the planned design and may change. Until webhooks launch, use status polling (Example 3).
-</Note>
-
-Webhook signatures must be computed over the **raw** request body, so this route uses `express.raw` rather than `express.json`.
-
-```javascript
-import express from 'express';
-import crypto from 'crypto';
-
-const app = express();
-
-function verifyWebhookSignature(rawBody, signature, secret) {
-  if (typeof signature !== 'string') return false;
-
-  const expected = Buffer.from(
-    crypto.createHmac('sha256', secret).update(rawBody).digest('hex'),
-    'utf8'
-  );
-  const received = Buffer.from(signature, 'utf8');
-
-  // timingSafeEqual throws if lengths differ, so check first
-  if (received.length !== expected.length) return false;
-  return crypto.timingSafeEqual(received, expected);
-}
-
-app.post('/webhooks/warp', express.raw({ type: 'application/json' }), async (req, res) => {
-  const signature = req.get('x-warp-signature');
-
-  if (!verifyWebhookSignature(req.body, signature, process.env.WARP_WEBHOOK_SECRET)) {
-    return res.status(401).json({ error: 'Invalid signature' });
-  }
-
-  const event = JSON.parse(req.body.toString('utf8'));
-
-  // Deduplicate: the same event may be delivered more than once
-  if (await hasProcessedEvent(event.id)) {
-    return res.json({ received: true });
-  }
-
-  switch (event.type) {
-    case 'payment.completed':
-      await handlePaymentCompleted(event.data);
-      break;
-    case 'payment.failed':
-      await updateOrderStatus(event.data.metadata?.orderId, 'payment_failed');
-      break;
-    default:
-      console.log('Unhandled event type:', event.type);
-  }
-
-  await markEventProcessed(event.id);
-  res.json({ received: true });
-});
-
-async function handlePaymentCompleted(data) {
-  const orderId = data.metadata?.orderId;
-
-  // Re-check the session status with the API before fulfilling
+async function getSession(sessionId) {
   const res = await fetch(
-    `https://checkout.usewarp.net/api/status/${encodeURIComponent(data.session_id)}`
+    `https://api.usewarp.net/v1/checkout/sessions/${encodeURIComponent(sessionId)}`,
+    { headers: { Authorization: `Bearer ${process.env.WARP_SECRET_KEY}` } },
   );
-  const session = await res.json();
-
-  if (session.status !== 'completed') {
-    await flagOrderForReview(orderId, session);
-    return;
-  }
-
-  await updateOrderStatus(orderId, 'paid', { txHash: session.tx_hash });
-  await fulfillOrder(orderId);
+  if (!res.ok) throw new Error(`Warp returned HTTP ${res.status}`);
+  return res.json();
 }
 
-app.listen(8080, () => {
-  console.log('Webhook server running on port 8080');
-});
+const session = await getSession(await getSessionIdForOrder(orderId));
+
+switch (session.status) {
+  case 'completed':
+    // Paid: session.payment has chain, token, tx_hash, amount and confirmations
+    break;
+  case 'pending':
+  case 'processing':
+    // Not final yet: show "confirming payment" and wait for the webhook
+    break;
+  case 'failed':
+  case 'expired':
+    // Offer to start a new checkout
+    break;
+}
 ```
 
----
+## Handle webhooks
 
-## Example 5: Creating a Payment Session (Python)
+See [Webhooks](/warp-pay/webhooks) for complete Express and Flask handlers with signature verification and deduplication.
 
-The same session-creation and status flow using [`requests`](https://requests.readthedocs.io/):
+## Create a session and list sessions in Python
 
-```python
+```python warp.py
 import os
-import time
 
 import requests
 
-CHECKOUT_API = "https://checkout.usewarp.net/api"
+WARP_API = "https://api.usewarp.net/v1"
+HEADERS = {"Authorization": f"Bearer {os.environ['WARP_SECRET_KEY']}"}
 
 
-def create_payment_session(order_id: str, amount_usd: float) -> dict:
-    resp = requests.post(
-        f"{CHECKOUT_API}/sessions",
+def create_session(order_id: str, amount_usd: float) -> dict:
+    res = requests.post(
+        f"{WARP_API}/checkout/sessions",
+        headers=HEADERS,
         json={
-            "public_key": os.environ["WARP_PUBLIC_KEY"],  # pk_...
             "amount_usd": amount_usd,
             "description": f"Order #{order_id}",
-            "metadata": {"orderId": order_id},
-            "return_url": f"https://yourstore.com/orders/{order_id}/success",
-            "cancel_url": f"https://yourstore.com/orders/{order_id}/cancel",
+            "metadata": {"order_id": order_id},
+            "return_url": f"https://example.com/orders/{order_id}",
+            "cancel_url": "https://example.com/cart",
         },
         timeout=10,
     )
-    resp.raise_for_status()
-    return resp.json()  # {"session_id", "checkout_url", "expires_at"}
+    res.raise_for_status()
+    return res.json()
 
 
-def wait_for_payment(session_id: str, interval: float = 3, timeout: float = 600) -> dict:
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        resp = requests.get(f"{CHECKOUT_API}/status/{session_id}", timeout=10)
-        resp.raise_for_status()
-        session = resp.json()
-        if session["status"] in ("completed", "failed"):
-            return session
-        time.sleep(interval)
-    raise TimeoutError(f"Session {session_id} did not finish in time")
+def completed_sessions():
+    """Yield every completed session, following the pagination cursor."""
+    params = {"status": "completed", "limit": 100}
+    while True:
+        res = requests.get(f"{WARP_API}/checkout/sessions", headers=HEADERS, params=params, timeout=10)
+        res.raise_for_status()
+        page = res.json()
+        yield from page["data"]
+        if not page["has_more"]:
+            break
+        params["starting_after"] = page["data"][-1]["id"]
 
 
 if __name__ == "__main__":
-    session = create_payment_session("1234", 49.99)
+    session = create_session("1234", 49.99)
     print("Send the customer to:", session["checkout_url"])
-
-    result = wait_for_payment(session["session_id"])
-    print("Final status:", result["status"], result.get("tx_hash"))
 ```
 
----
-
-## Additional Resources
+## Next steps
 
 <CardGroup cols={2}>
-  <Card title="API Reference" icon="book" href="/api-reference/checkout-api/create-payment-session">
-    API documentation with all endpoints and parameters.
+  <Card title="Webhooks" icon="bell" href="/warp-pay/webhooks">
+    Signature verification and retries.
   </Card>
-  <Card title="Quickstart" icon="rocket" href="/quickstart">
-    Step-by-step guide to your first payment session.
-  </Card>
-  <Card title="Protocol Design" icon="microscope" href="/warp-bridge/protocol">
-    Understand how Warp Bridge's cross-chain settlement works under the hood.
-  </Card>
-  <Card title="Use Cases" icon="lightbulb" href="/warp-bridge/usecases">
-    Explore different ways to integrate Warp into your application.
+  <Card title="API reference" icon="code" href="/api-reference/introduction">
+    Every endpoint, parameter and error.
   </Card>
 </CardGroup>
-
----
-
-<Note>
-  **Need help with your integration?** Email [support@usewarp.net](mailto:support@usewarp.net).
-</Note>

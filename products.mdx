@@ -1,173 +1,76 @@
 ---
-title: "Products"
-description: "Warp builds DeFi products for cross-chain transfers, multi-chain payments, and zero-knowledge services."
+title: "Warp products"
+sidebarTitle: "Products"
+description: "What each Warp product does today, what is in beta, and what is still on the roadmap."
+icon: "cubes"
 ---
 
-## Warp Ecosystem Overview
+Warp's products can be used independently. This page lists each one with its current status so you know what you can build on today.
 
-Warp is building a unified infrastructure layer designed to make multi-chain crypto interactions feel seamless, private, and secure. Our product suite targets the biggest pain points in modern DeFi: fragmentation, slow settlement, privacy gaps, and developer complexity.
+| Product | Status | What you can do today |
+| --- | --- | --- |
+| Pay with Warp | <Badge color="green">Live</Badge> | Accept crypto payments through hosted checkout and the Warp API |
+| ZK Proofs | <Badge color="blue">Beta</Badge> | Write, compile and deploy Circom/Groth16 verifiers; verify proofs on-chain or through the API |
+| Warp Verify | <Badge color="blue">Beta</Badge> | Issue zero-knowledge attestations and check them publicly |
+| Warp Bridge | <Badge color="gray">Roadmap</Badge> | Not available — design proposal only |
+| ZK Validator Network | <Badge color="gray">Roadmap</Badge> | Not available — design proposal only |
 
-<Note>
-  Warp is under active development. Features marked **Coming Soon**, **Planned**, or **Roadmap** are not yet available, and their descriptions reflect design goals rather than current behavior.
-</Note>
+## Pay with Warp
 
-Each product in the Warp ecosystem can be used independently — but together, they form a powerful foundation for building next-generation cross-chain applications.
+<Badge color="green">Live</Badge>
 
----
+Hosted crypto checkout for merchants. Your server creates a checkout session with a secret key, the customer pays on Warp's checkout page with MetaMask or any WalletConnect-compatible wallet, and Warp verifies the transaction on-chain before marking the session `completed`.
 
-## Warp Bridge
+- **EVM chains** — Ethereum, Polygon, Base, Arbitrum and Optimism on mainnet, plus their testnets. See [Supported networks and tokens](/warp-pay#supported-networks-and-tokens).
+- **Native tokens and stablecoins** — ETH (POL on Polygon), USDC, and USDT and DAI where deployed.
+- **No conversion** — you receive the token the customer paid with, at the receiving address configured for your project.
+- **Webhooks** — signed `payment.completed`, `payment.failed` and `payment.expired` events with automatic retries. See [Webhooks](/warp-pay/webhooks).
+- **SDKs and embedded checkout** — `@warpfi/node` for your server, and `@warpfi/react`, `@warpfi/vue` and `@warpfi/js` to show the checkout on your own page. See [SDKs](/sdks/overview).
 
-### Fast, No-KYC Cross-Chain Transfers
-
-Warp Bridge is a cross-chain transfer protocol designed to move assets between blockchains quickly, without relying on wrapped tokens, custodial bridges, or large shared liquidity pools.
-
-**Core Features:**
-
-- **Fast Settlement** — Solvers deliver funds from their own liquidity, so transfers are designed to complete in seconds rather than minutes or hours
-- **No KYC Required** — Connect your wallet and go — no accounts, no sign-ups
-- **Solver-Based Liquidity** — Permissionless market makers compete to fulfill orders, driving competitive pricing
-- **Progressive Privacy** _(Roadmap)_ — Designed so that, as network activity grows, individual transfers become harder to link
-- **Native Token Support** — Avoid unnecessary wrapped assets wherever possible
-- **Order + Call Execution** _(Planned)_ — Trigger actions on destination chains automatically (stake, swap, deposit, etc.)
-
-**Use Cases:**
-
-- Cross-chain arbitrage and trading
-- Multi-chain DeFi portfolio management
-- Fast liquidity routing for dApps
-- Trust-minimized cross-chain settlements
-
-<Card title="Learn More" icon="bridge" href="/warp-bridge/introduction">
-  Explore Warp Bridge architecture, protocol design, and integration methods.
+<Card title="Pay with Warp" icon="credit-card" href="/warp-pay">
+  How checkout sessions work, supported networks and the session lifecycle.
 </Card>
 
----
+## ZK Proofs
 
-## Pay With Warp
+<Badge color="blue">Beta</Badge>
 
-### Universal Crypto Checkout for Merchants
+Build zero-knowledge circuits in the Warp Platform and verify the resulting proofs.
 
-Pay With Warp is a flexible payment solution that allows customers to pay using any token on any supported blockchain — while merchants receive the asset they choose.
+- **Circom editor** — write circuits by hand or with the built-in AI assistant, then compile them in the browser.
+- **Groth16 verifier deployment** — run the trusted setup and deploy a Solidity verifier to Sepolia or Base Sepolia (or a local Anvil chain during development).
+- **Two ways to verify** — call `verifyProof` on your verifier contract directly, or use the hosted verification API, which returns a signed receipt.
 
-**Core Features:**
-
-- **Hosted Checkout** — Create a payment session with the [Checkout API](/api-reference/checkout-api/create-payment-session) and redirect customers to a hosted checkout page
-- **Multi-Chain Payments** — Accept payments across supported networks
-- **Any Token Support** — Customers pay with the supported asset they already hold
-- **Automatic Conversion** _(Roadmap)_ — Warp handles routing, swapping, and settlement behind the scenes
-- **Instant Confirmation** _(Roadmap)_ — Zero-knowledge proofs are intended to enable near-real-time payment verification
-- **Privacy Routing** _(Roadmap)_ — Payments are planned to flow through privacy-preserving channels, designed to be harder to link on-chain
-- **Crypto-to-Fiat** _(Coming Soon)_ — Option for merchants to receive traditional currency payouts
-
-**Use Cases:**
-
-- E-commerce checkout integration
-- SaaS subscription payments
-- NFT marketplace settlements
-- Digital goods and services
-- Cross-border payments
-
-<Card title="Learn More" icon="credit-card" href="/warp-pay/index">
-  Dive into Pay With Warp's architecture and see integration examples.
+<Card title="ZK Proofs" icon="shield-check" href="/zkproofs/introduction">
+  The end-to-end workflow from circuit to verified proof.
 </Card>
 
----
+## Warp Verify
 
-## ZK Proofs as a Service
+<Badge color="blue">Beta</Badge>
 
-### Deploy Privacy-Preserving Smart Contracts Without Writing Solidity _(Beta)_
+Zero-knowledge attestations about real-world assets — ownership, compliance and provenance — that anyone can check without seeing the underlying data.
 
-Warp's Zero-Knowledge Proofs as a Service (ZKPaaS) is designed to let developers build and deploy ZK-powered applications through the Warp Platform and API — no cryptography expertise required.
-
-**Features:**
-
-- **Platform and API Access** — Create, compile, verify, and deploy proofs from the [Warp Platform](https://platform.usewarp.net) or the [API](/api-reference/zk-proofs/list-zk-proofs)
-- **Circom Support** — Write and compile your own Circom circuits
-- **Pre-Built Circuits** _(Planned)_ — Common use cases (payments, identity, voting) ready to use
-- **Cross-Chain Verification** _(Planned)_ — Proofs verifiable on additional supported blockchains
-- **Privacy by Design** — Shield sensitive data while maintaining verifiable correctness
-
-**Target Use Cases:**
-
-- Private payment verification
-- Anonymous voting systems
-- Confidential identity verification
-- Shielded DeFi interactions
-- Verifiable computation proofs
-
-<Card title="Learn More" icon="shield-check" href="/zkproofs/introduction">
-  ZK Proofs as a Service is in beta. Learn how constraints, circuits, and verifier contracts fit together.
+<Card title="Warp Verify" icon="certificate" href="/warp-verify/overview">
+  Attestation types and the public check endpoint.
 </Card>
 
----
+## On the roadmap
 
-## ZK Validator Network
+<Badge color="gray">Roadmap</Badge>
 
-### Decentralized Infrastructure for Proof Verification and Settlement _(Coming Soon)_
+These are design proposals. They have no public implementation yet, and their design may change.
 
-The ZK Validator Network is planned as the cryptographic backbone for fast settlement, privacy routing, and trust-minimized cross-chain communication across the Warp ecosystem.
+- **Warp Bridge** — a planned solver-based cross-chain transfer protocol. See [Warp Bridge](/warp-bridge/introduction).
+- **ZK Validator Network** — a planned decentralized network for verifying zero-knowledge proofs. See [ZK Validator Network](/zkvalidator/introduction).
 
-**Planned Features:**
-
-- **Decentralized Proof Verification** — Validators verify ZK proofs and settle cross-chain orders
-- **Staking and Rewards** — Network participants earn fees for providing computational power
-- **Fast Verification** — Designed to verify proofs quickly, reducing reliance on long block-confirmation windows
-- **Slashing** — Validators are economically incentivized to behave honestly
-- **Multi-Chain Support** — Validators monitor and settle transactions across supported chains
-
-**Target Use Cases:**
-
-- Participate as a validator to earn network fees
-- Support fast settlement for Warp Bridge transfers
-- Enable privacy-preserving payment routing
-- Support trust-minimized cross-chain messaging
-
-<Card title="Coming Soon" icon="network-wired" href="/zkvalidator/introduction">
-  The ZK Validator Network is in development and not yet available. Read the design overview.
-</Card>
-
----
-
-## How Warp Products Work Together
-
-Each component of the Warp ecosystem is designed to complement the others:
-
-<Steps>
-  <Step title="Transfer Assets with Warp Bridge">
-    Move tokens between chains quickly using solver-based liquidity.
-  </Step>
-  <Step title="Accept Payments with Pay With Warp">
-    Let customers pay using any supported token while you receive your preferred asset.
-  </Step>
-  <Step title="Verify Transactions with ZK Proofs">
-    _(Roadmap)_ Fast payment confirmation powered by zero-knowledge proofs verified by the ZK Validator Network.
-  </Step>
-  <Step title="Achieve Privacy at Scale">
-    _(Roadmap)_ As adoption grows, transfers and payments are planned to flow through Warp's privacy layer, designed to make transactions harder to link on-chain.
-  </Step>
-</Steps>
-
----
-
-## Developer Resources
+## Next steps
 
 <CardGroup cols={2}>
-  <Card title="API Reference" icon="code" href="/api-reference/checkout-api/create-payment-session">
-    API documentation for payment sessions, organizations, and ZK proofs.
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Create a test checkout session and handle the webhook.
   </Card>
-  <Card title="Integration Examples" icon="code-branch" href="/warp-pay/examples">
-    Illustrative code samples for common integration patterns.
-  </Card>
-  <Card title="Protocol Design" icon="microscope" href="/warp-bridge/protocol">
-    Deep dive into Warp Bridge's technical architecture and security model.
-  </Card>
-  <Card title="Use Cases" icon="lightbulb" href="/warp-bridge/usecases">
-    Explore the ways you can integrate Warp into your application.
+  <Card title="API reference" icon="code" href="/api-reference/introduction">
+    Authentication, errors and every endpoint.
   </Card>
 </CardGroup>
-
----
-
-<Card title="Ready to Build?" icon="rocket" horizontal href="/quickstart">
-  Our quickstart guide walks you through your first integration — from API setup to accepting your first payment.
-</Card>
