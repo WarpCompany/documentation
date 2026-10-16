@@ -8,6 +8,13 @@
     "dark": "#9E1FAA"
   },
   "favicon": "/favicon.png",
+  "seo": {
+    "metatags": {
+      "og:image": "https://docs.usewarp.net/images/og.jpg",
+      "twitter:image": "https://docs.usewarp.net/images/og.jpg",
+      "twitter:card": "summary_large_image"
+    }
+  },
   "navigation": {
     "global": {
       "anchors": [
